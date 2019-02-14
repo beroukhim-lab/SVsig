@@ -147,7 +147,7 @@ end
 [hitstable_mix,hitstable_mix_lookup] = HitsTableCV(mfull_pval_mix,pa_mix, pval_tophits_mix, bins_event_tble, qFDR_mix, events, refgene_tble);
 
 CuratedFusionGene0=CuratedFusionGene(1:end-3,:);
-TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene,refgene_tble, array2table(UTumor) ,CosmicCencus,CuratedFusionGene0,[]);
+TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene,refgene_tble, [] ,CosmicCencus,CuratedFusionGene0,[]);
 
 
 
