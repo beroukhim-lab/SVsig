@@ -1,84 +1,93 @@
 % load or generate ICGC model and data structures
-model_exist = false;
-
+%K: I assume this is the background model%
+model_exist = true;
+%Note: make pwd'/Volumes/xchip_beroukhimlab/Kiran/git/2dmodel/SVsig'% 
 WorkDir = pwd;
-addpath(genpath(pwd))
+addpath(genpath(pwd));
 %DataDir = strcat(WorkDir,'/data/');
 %TracksDir = strcat(WorkDir,'/tracks/');
 
 % load data table with merged SV with the following columns:
+%these are the rearrangments (the events)
 % {seqnames, start, strand1, altchr, altpos, strand2, subtype(histology), sv_id, sid(sample ID), donor_unique_id} 
-sv_file=strcat(WorkDir,'/tracks/merged_1.6.1.csv');
-SVTable=readtable(sv_file, 'Delimiter', '\t');
+sv_file='/Volumes/xchip_beroukhimlab/ofer/matlab/merged_1.6.1.csv';
+SVTable=readtable(sv_file, 'Delimiter', ',');
 
 if model_exist
 
-    load ICGC_2D_SV_model.mat
+    load '/Volumes/xchip_beroukhimlab/ofer/DIPG/matlab/ICGC_2D_SV_model.mat'
 
 else
 
-    mix_model
+    mixmodel;
 
 end
 
 
-EventLengthThreshold=1e2;
-len_filter=1e6;
-bks_cluster=1;
+% EventLengthThreshold=1e2;
+% len_filter=1e6;
+% bks_cluster=1;
 
-% events array
-events0=zeros(height(SVTable),12);
-
-if sum(strcmp(SVTable.Properties.VariableNames, 'histology_abbreviation'))>0
-    SVTable.Properties.VariableNames{'histology_abbreviation'} = 'subtype';
-end
-
-if isa(SVTable.seqnames,'numeric')    
-    events0(:,1)=SVTable.seqnames;
-else
-    events0(:,1)=chr_str2num(SVTable.seqnames)';
-end
-
-if isa(SVTable.altchr,'numeric')
-    events0(:,4)=SVTable.altchr;    
-else
-    events0(:,4)=chr_str2num(SVTable.altchr)';
-end
-
-events0(:,2)=SVTable.start;
-[Ustrand1, ia_strand1, ic_strand1]=unique(SVTable.strand);
-events0(:,3)=ic_strand1;
-
-
-events0(:,5)=SVTable.altpos;
-[Ustrand2, ia_strand2, ic_strand2]=unique(SVTable.altstrand);
-events0(:,6)=ic_strand2;
-
-[UTumor, ia_code, ic_code]=unique(SVTable.subtype);
-events0(:,7)=ic_code;
-
-[Uevent, ia_event, ic_event]=unique(SVTable.sv_id);
-events0(:,8)=ic_event;
-
-[Usample, ia_sample, ic_sample]=unique(SVTable.sid);
-events0(:,9)=ic_sample;
-
-if sum(strcmp('donor_unique_id',SVTable.Properties.VariableNames))>0
-    [Upatient, ia_patient, ic_patient]=unique(SVTable.donor_unique_id);
-else
-    [Upatient, ia_patient, ic_patient]=unique(SVTable.sid);
-end
-events0(:,10)=ic_patient;
-
-%events0(:,11)=SVTable.HOMLEN;
-%events0(:,12)=SVTable.INSLEN;
-
-disp(strcat('total events from vcfs: ',num2str(length(events0))));
-% filter mask track
-[events0,masked_events] = mask_events( events0,mask_track );
-disp(strcat('total events after masked regions: ',num2str(length(events0))));
-
+% % events array
+% %events 0 seems to be an entirely numeric representation of SV table
+% events0=zeros(height(SVTable),12);
+% 
+% if sum(strcmp(SVTable.Properties.VariableNames, 'histology_abbreviation'))>0
+%     SVTable.Properties.VariableNames{'histology_abbreviation'} = 'subtype';
+% end
+% 
+% if isa(SVTable.seqnames,'numeric')    
+%     events0(:,1)=SVTable.seqnames;
+% else
+%     events0(:,1)=chr_str2num(SVTable.seqnames)';
+% end
+% 
+% if isa(SVTable.seqnames,'numeric')    
+%     events0(:,1)=SVTable.seqnames;
+% else
+%     events0(:,1)=chr_str2num(SVTable.seqnames)';
+% end
+% 
+% events0(:,2)=SVTable.start;
+% [Ustrand1, ia_strand1, ic_strand1]=unique(SVTable.strand);
+% events0(:,3)=ic_strand1;
+% 
+% 
+% events0(:,5)=SVTable.altpos;
+% [Ustrand2, ia_strand2, ic_strand2]=unique(SVTable.altstrand);
+% events0(:,6)=ic_strand2;
+% 
+% %where is subtype?
+% %I'm assuming subtype refers to cancer subtype and is represented by the
+% %variable dcc_project_code 
+% %[UTumor, ia_code, ic_code]=unique(SVTable.subtype);
+% %[UTumor, ia_code, ic_code]=unique(SVTable.dcc_project_code)
+% %events0(:,7)=ic_code;
+% 
+% [Uevent, ia_event, ic_event]=unique(SVTable.sv_id);
+% events0(:,8)=ic_event;
+% 
+% [Usample, ia_sample, ic_sample]=unique(SVTable.sid);
+% events0(:,9)=ic_sample;
+% 
+% if sum(strcmp('donor_unique_id',SVTable.Properties.VariableNames))>0
+%     [Upatient, ia_patient, ic_patient]=unique(SVTable.donor_unique_id);
+% else
+%     [Upatient, ia_patient, ic_patient]=unique(SVTable.sid);
+% end
+% events0(:,10)=ic_patient;
+% 
+% %events0(:,11)=SVTable.HOMLEN;
+% %events0(:,12)=SVTable.INSLEN;
+% 
+% disp(strcat('total events from vcfs: ',num2str(length(events0))));
+% % filter mask track
+% [events0,masked_events] = mask_events( events0,mask_track );
+% disp(strcat('total events after masked regions: ',num2str(length(events0))));
+% 
 % events matrix
+%bin the events? %what is happening in this for loop below?
+%%%%%%%%%%%%start here if model exists%%%%%%%%%%%%%%%%%%%%%%
 mfull0=sparse(length(bins),length(bins));
 bins_event_tble0=zeros(length(events0),3);
 for c1 = 1:length(events0),
@@ -127,6 +136,7 @@ for c1 = 1:length(events),
     end
 end
 
+%what is bks_cluster referring to?
 if ~bks_cluster
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull+mfull', mix_model, [], [],1);
 else
@@ -137,7 +147,10 @@ end
 [hitstable_mix,hitstable_mix_lookup] = HitsTableCV(mfull_pval_mix,pa_mix, pval_tophits_mix, bins_event_tble, qFDR_mix, events, refgene_tble);
 
 CuratedFusionGene0=CuratedFusionGene(1:end-3,:);
-TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene,refgene_tble,[],CosmicCencus,CuratedFusionGene0,[]);
+TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene,refgene_tble, array2table(UTumor) ,CosmicCencus,CuratedFusionGene0,[]);
+
+
+
 
 h1=1;
 TbyGene_mix_lf = table();
@@ -157,7 +170,8 @@ hits_table.cluster_num = annotated_table.hit_num;
 hits_table.sid = annotated_table.sid;
 hits_table.gene_i = annotated_table.gene_i;
 hits_table.gene_j = annotated_table.gene_j;
-hits_table.subtype = annotated_table.subtype;
+
+%hits_table.subtype = annotated_table.subtype;
 hits_table.chr_i = annotated_table.seqnames;
 hits_table.pos_i = annotated_table.start;
 hits_table.strand_i = annotated_table.strand;
@@ -166,3 +180,5 @@ hits_table.pos_j = annotated_table.altpos;
 hits_table.strand_j = annotated_table.altstrand;
 hits_table.pval = annotated_table.pval;
 writetable(hits_table,'sigSV_annot','delimiter','\t')
+
+%A = [hits_table.gene_i, hits_table.gene_j]
