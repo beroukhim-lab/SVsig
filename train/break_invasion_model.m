@@ -18,6 +18,8 @@ Patient_column=10;
 
 % Generate numeric array of events from merge set
 [events0, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2, Utopo, Umech] = GenerateSVarray(EventsFile,EventLengthThreshold,CHR,Tumor_column,Event_column,Sample_column,Patient_column);
+%Kiran: remove Utopo and Umech as outputs since they are not in Xiatong's matrix
+%[events0, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2] = GenerateSVarray(EventsFile,EventLengthThreshold,CHR,Tumor_column,Event_column,Sample_column,Patient_column);
 
 % remove events in mask_track
 [events0,masked_events] = mask_events( events0,mask_track );

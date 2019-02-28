@@ -8,6 +8,8 @@ for ca=1:num_annot,
     mfull{ca}=sparse(length(bins),length(bins));
 end
 
+%initialize bins_event_tble
+bins_event_tble = zeros(length(events),5);
 for c1 = 1:length(events),
     bins_event_tble(c1,1) = find(bins(:,1)==events(c1,1) & bins(:,2)<=events(c1,2) & bins(:,3)>=events(c1,2));
     bins_event_tble(c1,2) = find(bins(:,1)==events(c1,4) & bins(:,2)<=events(c1,5) & bins(:,3)>=events(c1,5));

@@ -1,4 +1,4 @@
-function [qFDR, pa, pval_tophits,mfull] = PVal(mfull, p, qe, sij,approx_flag)
+function [qFDR, pa, pval_tophits,mfull] = PVal(mfull, p, qe, sij,approx_flag, FDR_THRESHOLD)
 
 qqplot_flag = 0;
 
@@ -45,6 +45,10 @@ disp(['calculating p-val for the rest ' num2str(length(pos_k)) ' tiles']);
 rand_nnz = rand(length(pos_k),1);
 tic
 if ~approx_flag
+    %adding a random number to the p-value, makes the model statistically
+    %correct but makes the bottom of the list stochasatic rather than
+    %deterministic
+   
     pval_high = binopdf(mfull_pos, nume, p_pos).*rand_nnz+(1-binocdf(mfull_pos,nume,p_pos));
 else
     pval_high = poisspdf(mfull_pos, nume*p_pos).*rand_nnz+(1-poisscdf(mfull_pos,nume*p_pos));
@@ -63,7 +67,8 @@ end
 
 % calcualte BH-FDR
 qFDR=mafdr(pval(:,1),'BHFDR','true');
-hits_idx=find(qFDR<0.5);
+%Kiran added FDR_THRESHOLD as a global variable
+hits_idx=find(qFDR< FDR_THRESHOLD);
 tophits=length(hits_idx);
 pval_tophits = pval(1:tophits,:);
 

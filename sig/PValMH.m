@@ -1,4 +1,10 @@
-function [qFDR_tophits, pa, pval_tophits,mfull] = PValMH(mfull, p, bins, events, sij1dx, chsize, CHR, approx_flag)
+
+%%%Calculates p-value with adjustments to account for random number or
+%%%fragile cluster? Can't remember
+%%%Added FDR Threshold so we can add this as a variable in the master file
+%%%which is good programming practice!!!
+
+function [qFDR_tophits, pa, pval_tophits,mfull] = PValMH(mfull, p, bins, events, sij1dx, chsize, CHR, approx_flag, FDR_THRESHOLD)
 
 qqplot_flag = 1;
 
@@ -125,7 +131,7 @@ end
 
 % calcualte BH-FDR
 qFDR=mafdr(pval(:,1),'BHFDR','true');
-hits_idx=(qFDR<0.1);
+hits_idx=(qFDR<FDR_THRESHOLD);
 %tophits=sum(hits_idx);
 tophits = sortrows([pval(hits_idx,:) qFDR(hits_idx)],1);
 [p_high_b,p_high_loc]=ismember(tophits(:,2),pval_high0(:,2));

@@ -1,7 +1,14 @@
 % load or generate ICGC model and data structures
-%K: I assume this is the background model%
-model_exist = true;
-%Note: make pwd'/Volumes/xchip_beroukhimlab/Kiran/git/2dmodel/SVsig'% 
+%@local false means run on local machine true means runs on server 
+local = false;
+model_exist = false;
+
+if local
+pwd = '/Volumes/xchip_beroukhimlab/Kiran/git/2dmodel/SVsig' 
+else 
+pwd = '/xchip/beroukhimlab/Kiran/git/2dmodel/SVsig'
+end 
+
 WorkDir = pwd;
 addpath(genpath(pwd));
 %DataDir = strcat(WorkDir,'/data/');
@@ -9,9 +16,25 @@ addpath(genpath(pwd));
 
 % load data table with merged SV with the following columns:
 %these are the rearrangments (the events)
-% {seqnames, start, strand1, altchr, altpos, strand2, subtype(histology), sv_id, sid(sample ID), donor_unique_id} 
-sv_file='/Volumes/xchip_beroukhimlab/ofer/matlab/merged_1.6.1.csv';
+% {seqnames, start, strand1, altchr, altpos, strand2, subtype(histology)(aka dcc_project_code), sv_id, sid(sample ID), donor_unique_id} 
+
+%Ofer's sv_file for ICGC
+%sv_file='/Volumes/xchip_beroukhimlab/ofer/matlab/merged_1.6.1.csv';
+%my sv_file from Xiatong's adjacency matrix 
+
+if local 
+sv_file = '/Volumes/xchip_beroukhimlab/Kiran/adjancencies/prepped_events.csv'
+
+else 
+    
+sv_file = '/xchip/beroukhimlab/Kiran/adjancencies/prepped_events.csv'
+
+end
+
 SVTable=readtable(sv_file, 'Delimiter', ',');
+
+%set random seed for reproducibility%
+rng(3014)
 
 if model_exist
 
@@ -25,8 +48,11 @@ end
 
 
 % EventLengthThreshold=1e2;
-% len_filter=1e6;
-% bks_cluster=1;
+ len_filter=1e6;
+%@bks_cluster determines whether PVal(fragile sites not accounted for) or PValMH(fragile sites accounted for) is used.
+%0 => PVal, 1=> PValMH
+ bks_cluster=0;
+ FDR_THRESHOLD = 0.1;
 
 % % events array
 % %events 0 seems to be an entirely numeric representation of SV table
@@ -138,9 +164,10 @@ end
 
 %what is bks_cluster referring to?
 if ~bks_cluster
-    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull+mfull', mix_model, [], [],1);
+    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull+mfull', mix_model, [], [],1, FDR_THRESHOLD);
 else
     sij1dx = length_dist_1d_bins(events,chsize,10);
+    %PValMH is adjusts for clustered fragile sites within bins 
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull+mfull', mix_model, bins, events, sij1dx, chsize, CHR, 1);
 end
 
@@ -179,6 +206,9 @@ hits_table.chr_j = annotated_table.altchr;
 hits_table.pos_j = annotated_table.altpos;
 hits_table.strand_j = annotated_table.altstrand;
 hits_table.pval = annotated_table.pval;
-writetable(hits_table,'sigSV_annot','delimiter','\t')
+writetable(hits_table,'sigSV_annot_Kiran','delimiter','\t')
 
 %A = [hits_table.gene_i, hits_table.gene_j]
+
+%remove entries that have only 1 hit
+
