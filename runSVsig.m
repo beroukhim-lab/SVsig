@@ -1,7 +1,14 @@
 % load or generate ICGC model and data structures
 %@local false means run on local machine true means runs on server 
-local = false;
+local = true;
 model_exist = false;
+len_filter=1e6;
+%@bks_cluster determines whether PVal(fragile sites not accounted for) or PValMH(fragile sites accounted for) is used.
+%0 => PVal, 1=> PValMH
+ bks_cluster=1;
+ FDR_THRESHOLD = 0.1;
+ %set random seed for reproducibility%
+rng(3014)
 
 if local
 pwd = '/Volumes/xchip_beroukhimlab/Kiran/git/2dmodel/SVsig' 
@@ -33,8 +40,7 @@ end
 
 SVTable=readtable(sv_file, 'Delimiter', ',');
 
-%set random seed for reproducibility%
-rng(3014)
+
 
 if model_exist
 
@@ -48,11 +54,7 @@ end
 
 
 % EventLengthThreshold=1e2;
- len_filter=1e6;
-%@bks_cluster determines whether PVal(fragile sites not accounted for) or PValMH(fragile sites accounted for) is used.
-%0 => PVal, 1=> PValMH
- bks_cluster=0;
- FDR_THRESHOLD = 0.1;
+ 
 
 % % events array
 % %events 0 seems to be an entirely numeric representation of SV table
@@ -206,7 +208,7 @@ hits_table.chr_j = annotated_table.altchr;
 hits_table.pos_j = annotated_table.altpos;
 hits_table.strand_j = annotated_table.altstrand;
 hits_table.pval = annotated_table.pval;
-writetable(hits_table,'sigSV_annot_Kiran','delimiter','\t')
+writetable(hits_table,'sigSV_annot_PValMH_wbackground','delimiter','\t')
 
 %A = [hits_table.gene_i, hits_table.gene_j]
 
