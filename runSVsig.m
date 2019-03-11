@@ -1,14 +1,20 @@
-% load or generate ICGC model and data structures
-%@local false means run on local machine true means runs on server 
-local = true;
+%%%%%%%%% global variables%%%%%%%%%%%%%%%%%
+%@param local  = false means run on local machine, local = true means runs on server 
+local = false;
+%@param model_exist: to re-run background model set to false, to use loaded background model set to true 
 model_exist = false;
 len_filter=1e6;
-%@bks_cluster determines whether PVal(fragile sites not accounted for) or PValMH(fragile sites accounted for) is used.
+%@param bks_cluster determines whether PVal(fragile sites not accounted for) or PValMH(fragile sites accounted for) is used.
 %0 => PVal, 1=> PValMH
  bks_cluster=1;
+ %param FDR_threshold sets the q value cut off
  FDR_THRESHOLD = 0.1;
  %set random seed for reproducibility%
 rng(3014)
+%@param output_file: sets the name for the output file containing the significant 2D hits %
+output_file = '/Path/to/File/Name_of_File.txt'
+
+%%%%%%set data directory%%%%%%%%%%%%%%%%
 
 if local
 pwd = '/Volumes/xchip_beroukhimlab/Kiran/git/2dmodel/SVsig' 
@@ -21,26 +27,33 @@ addpath(genpath(pwd));
 %DataDir = strcat(WorkDir,'/data/');
 %TracksDir = strcat(WorkDir,'/tracks/');
 
-% load data table with merged SV with the following columns:
+%%%%%%%%% load data table with merged SV with the following columns:
 %these are the rearrangments (the events)
-% {seqnames, start, strand1, altchr, altpos, strand2, subtype(histology)(aka dcc_project_code), sv_id, sid(sample ID), donor_unique_id} 
+% {seqnames, start, strand1, altchr, altpos, strand2,
+% subtype(histology)(aka dcc_project_code), sv_id, sid(sample ID),
+% donor_unique_id}%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Ofer's sv_file for ICGC
 %sv_file='/Volumes/xchip_beroukhimlab/ofer/matlab/merged_1.6.1.csv';
 %my sv_file from Xiatong's adjacency matrix 
 
 if local 
-sv_file = '/Volumes/xchip_beroukhimlab/Kiran/adjancencies/prepped_events.csv'
+%sv_file ='/Volumes/xchip_beroukhimlab/Kiran/adjancencies/prepped_events.csv'%
+%sv_file='/Volumes/xchip_beroukhimlab/ofer/matlab/merged_1.6.1.csv'
+sv_file = '/Volumes/xchip_beroukhimlab/Kiran/adjancencies/filteredevents700k.csv' %700
+%k matrix checked for are the partners of the adjacencies 1 MB apart
 
 else 
     
-sv_file = '/xchip/beroukhimlab/Kiran/adjancencies/prepped_events.csv'
-
+%sv_file = '/xchip/beroukhimlab/Kiran/adjancencies/prepped_events.csv'
+%sv_file='/xchip/beroukhimlab/ofer/matlab/merged_1.6.1.csv'
+sv_file = '/xchip/beroukhimlab/Kiran/adjancencies/filteredevents700k.csv'
 end
 
 SVTable=readtable(sv_file, 'Delimiter', ',');
 
 
+%%%%%%%%%%%%load or create background model%%%%%%%%%%%%%%%%%%%
 
 if model_exist
 
@@ -164,13 +177,12 @@ for c1 = 1:length(events),
     end
 end
 
-%what is bks_cluster referring to?
 if ~bks_cluster
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull+mfull', mix_model, [], [],1, FDR_THRESHOLD);
 else
     sij1dx = length_dist_1d_bins(events,chsize,10);
-    %PValMH is adjusts for clustered fragile sites within bins 
-    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull+mfull', mix_model, bins, events, sij1dx, chsize, CHR, 1);
+    %PValMH adjusts for clustered fragile sites within bins whereas PVal does not
+    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull+mfull', mix_model, bins, events, sij1dx, chsize, CHR, 1, 0.1, 0);
 end
 
 [hitstable_mix,hitstable_mix_lookup] = HitsTableCV(mfull_pval_mix,pa_mix, pval_tophits_mix, bins_event_tble, qFDR_mix, events, refgene_tble);
@@ -208,9 +220,15 @@ hits_table.chr_j = annotated_table.altchr;
 hits_table.pos_j = annotated_table.altpos;
 hits_table.strand_j = annotated_table.altstrand;
 hits_table.pval = annotated_table.pval;
-writetable(hits_table,'sigSV_annot_PValMH_wbackground','delimiter','\t')
 
-%A = [hits_table.gene_i, hits_table.gene_j]
 
-%remove entries that have only 1 hit
 
+%written by Kiran 3/8/19
+%remove entries from hits_table that have only supported by 1 sample
+v = accumarray(hits_table.cluster_num, 1);                  % Tally Occurrences Of Rows
+u_cluster_id =  unique(hits_table.cluster_num);  %unique cluster_ids
+indices = u_cluster_id ( v > 1); %Which clusters have greater than 1 occurence
+hits_table = hits_table(ismember(hits_table.cluster_num, indices),:); %which hits have greater than 1 occurence
+disp(strcat(num2str(length(v) - length(v(v>1))), '   hits are supported by only one sample'));
+
+writetable(hits_table, output_file,'delimiter','\t')
