@@ -1,4 +1,8 @@
 function len_factor = model_length_dist( events,bins, CHR, sij1dx)
+%@param CHR is chromosome
+%@param sij1dx is one dimensional sij on the x-axis
+%@param bins is a list of the start and end positions of the bins
+%@param events is the list of events (i.e. junctions)
 
 % fraction of events per length interval 
 sij1dy0 = EventLengthDist_G(sij1dx,events,0);

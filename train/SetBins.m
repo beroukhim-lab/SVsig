@@ -12,7 +12,8 @@ chr = [events(:,1);events(:,4)];
 pos = [events(:,2);events(:,5)];
 
 bc=1;
-for c1 = CHR,
+%for all the chrmosomes
+for c1 = CHR
 
     posc=0;
     nextpos=0;

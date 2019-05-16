@@ -1,4 +1,6 @@
+
 global refgene sij1dx sij1dy
+global num_breakpoints_per_bin
 
 EventsFile=sv_file;
 
@@ -7,22 +9,28 @@ fragile_track=importdata([WorkDir '/tracks/fragile_genes_smith.hg19fp.bed.txt'])
 
 CHR = 1:23; % chromosomes to include in analysis
 EventLengthThreshold=200; % filter short event [bp] 
-num_breakpoints_per_bin=100; %def= 80
+%num_breakpoints_per_bin=1000; %def= 80
 num_annot=4;
-min_bin_dist = 500; % def = 500; minimum distance of bins-separting events
+min_bin_dist = 500; % def = 500; minimum distance of bins-separating events
 
 Tumor_column=7; 
 Event_column=8;
 Sample_column=9;
 Patient_column=10;
+Weights_column = 11;
 
 % Generate numeric array of events from merge set
-[events0, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2, Utopo, Umech] = GenerateSVarray(EventsFile,EventLengthThreshold,CHR,Tumor_column,Event_column,Sample_column,Patient_column);
-%Kiran: remove Utopo and Umech as outputs since they are not in Xiatong's matrix
-%[events0, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2] = GenerateSVarray(EventsFile,EventLengthThreshold,CHR,Tumor_column,Event_column,Sample_column,Patient_column);
+[events0, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2] = GenerateSVarray(EventsFile,EventLengthThreshold,CHR,Tumor_column,Event_column,Sample_column,Patient_column, Weights_column);
+
+%returns an events matrix with a list of junctions
+%also returns unique vectors for the sample ids, sv_ids, tumor subtypes,
+%strands,topologies and mechanism 
 
 % remove events in mask_track
 [events0,masked_events] = mask_events( events0,mask_track );
+%returns masked_events which is a logical vector indicating whether or not
+%an event is masked?
+
 [events0,masked_l1_events] = mask_events( events0,l1_track );
 
 % set bins boundries 
@@ -37,6 +45,10 @@ Patient_column=10;
 
 [bins_event_tble, bins, mfull, events, removed_events_std] = RemoveZeroVarSampleEvents(bins_event_tble, bins, mfull, events);
 
+%for export to R
+mfull00 = mfull{1} + mfull{2} + mfull{3} + mfull{4};
+%dlmwrite('/Volumes/xchip_beroukhimlab/Kiran/adjancencies/mfull_weighted.txt', nonzeros(mfull00), 'delimiter','\t','newline','pc','precision',13);
+
 R = MarginalProbability(bins_event_tble,events,numbins); 
 
 sij1dx = length_dist_1d_bins(events,chsize,10);
@@ -44,10 +56,11 @@ sij1dy = EventLengthDist_G(sij1dx,events,0);
 sij1dy = sum(sij1dy,2);
 sij1dy = sij1dy./sum(sij1dy(1:end-1).*diff(sij1dx'));
 
-annot_array=event_annot(events,TAD_track,fragile_track,gene_track,cancer_genes_track);
+%annot_array=event_annot(events,TAD_track,fragile_track,gene_track,cancer_genes_track);
 
-
-no_annot=1;
+%no_annot is a boolean indicating whether CP_fragile or CP function should
+%be used 
+no_annot=0;
 if no_annot    
     fragile_annot=12;
     sij = ConditionalProbability_fragile(events,annot_array(:,fragile_annot),bins_event_tble,chsize,bins,CHR,sij1dx);

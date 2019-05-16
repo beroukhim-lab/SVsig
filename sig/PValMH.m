@@ -1,6 +1,6 @@
 
-%%%Calculates p-value with adjustments to account for random number or
-%%%fragile cluster? Can't remember
+%%%Calculates p-value with adjustments to account for
+%%%fragile cluster?
 %%%Added FDR Threshold so we can add this as a variable in the master file
 %%%which is good programming practice!!!
 %%@qqplot_flag ->  0 means no qqplot is generated, 1 means qqplot is

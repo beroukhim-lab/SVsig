@@ -11,7 +11,7 @@ mfull(eye(mat_size)~=0) = diag(mfull)/2;
 nume = sum(mfull(:));
 
 % probability matrix
-if isempty(p),
+if isempty(p)
     pa = bsxfun(@times,qe,sij);
     pa = triu(pa + pa');
     pa(eye(mat_size)~=0) = diag(pa)/2;
@@ -23,6 +23,10 @@ else
     end
 end
     
+%export pa and mfull matrices to R from here%
+%dlmwrite('/xchip/beroukhimlab/Kiran/adjancencies/20190426mfull.txt', mfull, 'delimiter','\t','newline','pc','precision',13);
+%dlmwrite('/xchip/beroukhimlab/Kiran/adjancencies/20190426pa.txt', pa, 'delimiter','\t','newline','pc','precision',13);
+
 
 % divide tiles with positive values from zeros 
 pos_k = find(mfull>=1 & pa>0);
@@ -45,8 +49,8 @@ disp(['calculating p-val for the rest ' num2str(length(pos_k)) ' tiles']);
 rand_nnz = rand(length(pos_k),1);
 tic
 if ~approx_flag
-    %adding a random number to the p-value, makes the model statistically
-    %correct but makes the bottom of the list stochasatic rather than
+    %adding a random number to the p-value, to smooth the p value distribution for fdr  
+    %but makes the bottom of the list stochasatic rather than
     %deterministic
    
     pval_high = binopdf(mfull_pos, nume, p_pos).*rand_nnz+(1-binocdf(mfull_pos,nume,p_pos));
@@ -62,7 +66,7 @@ len_pval=length(pval);
 
 % qq-plot  
 if qqplot_flag
-   qqplot(pval(:,1),[]);
+   %qqplot(pval(:,1), ;)
 end
 
 % calcualte BH-FDR
@@ -71,6 +75,8 @@ qFDR=mafdr(pval(:,1),'BHFDR','true');
 hits_idx=find(qFDR< FDR_THRESHOLD);
 tophits=length(hits_idx);
 pval_tophits = pval(1:tophits,:);
-
+%to get all the tiles as hits in order to get the nice matrix from
+%HitsTableCV we just make pval top hits be all the hits
+%pval_tophits = pval; 
 return
 

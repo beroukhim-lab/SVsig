@@ -1,6 +1,6 @@
 function annotated_table = annotate_hits_list( TbyGene_Table,SVTable,bins,hitstable_lookup,pa_mix)
 
-if isstruct(TbyGene_Table),
+if isstruct(TbyGene_Table)
 
     annotated_table=table();
     chits=table(); ct=1;

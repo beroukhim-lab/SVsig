@@ -16,7 +16,7 @@ pa0=sum(pa,3);
 
 ct=1;
 ct_last=1;
-for c1=1:length(pval_tophits),
+for c1=1:length(pval_tophits),2
     numhits=mfull0(pval_tophits(c1,2));
     event_loc=find(bin_event_matrix(:,3)==pval_tophits(c1,2));
     if numhits~=length(event_loc),
@@ -25,7 +25,7 @@ for c1=1:length(pval_tophits),
     for c2=1:length(event_loc),
     [bini,binj]=ind2sub(mat_size,pval_tophits(c1,2));    
     hitstable(ct,1:2)=[bini,binj]; %bini/j
-    hitstable(ct,3)=numhits; %number of events in bin
+    hitstable(ct,3)=numhits; %number of events in bin EQVUIALENT to the number of samples because we only allow 1 sample per bin (also checked this using data.table and the sample # in R) 
     hitstable(ct,4)=pval_tophits(c1,1); %p-value
     hitstable(ct,5)=qFDR(c1); %q-value
     hitstable(ct,6)=pa0(bini,binj); %bin probability

@@ -1,5 +1,5 @@
 function density = tile_density( tile, bins, events , sij1dx, e_density, plot_flag )
-% function return the denisty of events in a tile (support)
+% function returns the denisty of events in a SINGLE tile (support)
 
 % uncertainty parameters
 dr_xy=4e5; % default 4e5
@@ -15,13 +15,13 @@ min_density=4e8;
 % list of unique events
 breakpoint=[events(:,1:2);events(:,4:5)];
 tile_pos_x=[]; tile_pos_y=[]; marg_pos_x=[]; marg_pos_y=[];
-for c1=1:length(tile(:,1)),
+for c1=1:length(tile(:,1))
     tile1(c1)=min(tile(c1,:));
     tile2(c1)=max(tile(c1,:));
     pos1=bins(tile1(c1),1:3);
     pos2=bins(tile2(c1),1:3);
     tile_events=list_events(events(:,1:6),bins(tile1(c1),1:3),bins(tile2(c1),1:3),0,0,[],[],[],[]);
-    if bins(tile(c1,1),1)==bins(tile(c1,2),1), % same chromosome
+    if bins(tile(c1,1),1)==bins(tile(c1,2),1) % same chromosome
        tile_pos_x=[tile_pos_x;tile_events(:,2)];
        tile_pos_y=[tile_pos_y;tile_events(:,5)];
     else
@@ -36,10 +36,10 @@ for c1=1:length(tile(:,1)),
     density_factor(c1)=length(tile_events)*1e12/(bins(tile1(c1),3)-bins(tile1(c1),2))/(bins(tile2(c1),3)-bins(tile2(c1),2))/exp_density;    
 end
 density_factor=mean(density_factor);
-if density_factor>1000,
+if density_factor>1000
     density_factor=1000;
 end
-if density_factor<0.001,
+if density_factor<0.001
     density_factor=0.001;
 end
 
@@ -80,9 +80,36 @@ for c1=1:num_events,
     marg_xh(marg_xh<0)=0;
     marg_yh=marg_yh-prctile(marg_yh,h_prctile);
     marg_yh(marg_yh<0)=0;
+     
+    %Kiran added: control for the case where the sum of the marg_xh and
+    %marg_yh is zero
     
+    if sum(marg_xh) ~= 0 && sum(marg_yh) ~= 0 
     marg_xh=marg_xh/sum(marg_xh);
     marg_yh=marg_yh/sum(marg_yh);
+
+    elseif sum(marg_xh)==0
+    
+    marg_xh = 0;
+    
+    
+    
+    end
+   
+    if sum(marg_yh)==0 
+    
+    marg_yh = 0;
+    
+    end
+    % end of addition
+    
+    
+    
+    
+    
+    
+    
+    
     std_x = sqrt(sum(marg_xc.^2.*marg_xh))*n_std;
     std_y = sqrt(sum(marg_yc.^2.*marg_yh))*n_std;
 
@@ -147,6 +174,7 @@ for c1=1:num_events,
     tile_mat(y_range,x_range)=true;
 %    [sum(ir_x) sum(ir_y) std_x std_y nnxy]
 end
+
 [K,cluster_area] = convhull(convhull_c);
 %density=[sum(tile_mat(:))/((grid0-floor(2*dr_xy/x_res))*(grid0-floor(2*dr_xy/y_res)))*tile_area num_events];
 %cluster_area=sum(tile_mat(:))*x_res*y_res;

@@ -1,8 +1,12 @@
-function [output, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2, Utopo, Umech] = GenerateSVarray(input,length_th,CHR,Tumor_column,Event_column,Sample_column,Patient_column)
+function [output, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2] = GenerateSVarray(input,length_th,CHR,Tumor_column,Event_column,Sample_column,Patient_column,Weights_column)
 
 %Tumor_column = 7;
 %Sample_column = 10;
 
+%reading in SV file and filling in output events array with appropriate
+%columns
+%need to have an extra column with the weight of each arrangement 
+%ultimately multiply binned events by the weights?
 
 
 disp('generating events array...');
@@ -31,14 +35,20 @@ if ~isempty(Patient_column),
     [Upatient, ia_patient, ic_patient]=unique(snowman_table(:,Patient_column));
     output(:,10)=ic_patient;
 end
+if ~isempty(Weights_column)
+    %[UWeights, ia_weights, ic_weights] = unique(snowman_table(:,Weights_column));
+    %output(:, 11) = ic_weights;
+    %we want weights to be actual fractions rather than coded by an integer
+    output(:,11) = snowman_table.weights;
+end
 
-if size(snowman_table,2)>10
+if size(snowman_table,2)>11
     [Utopo, ia_topo, ic_topo]=unique(snowman_table.topo);
-    output(:,11)=ic_topo;
-    output(:,12)=snowman_table.topo_n;
+    output(:,12)=ic_topo;
+    output(:,13)=snowman_table.topo_n;
     [Umech, ia_mech, ic_mech]=unique(snowman_table.mech);
-    output(:,13)=ic_mech;
-    output(:,14)=snowman_table.homseq;
+    output(:,14)=ic_mech;
+    output(:,15)=snowman_table.homseq;
 end
 
 

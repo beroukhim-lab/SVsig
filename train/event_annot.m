@@ -42,7 +42,7 @@ annot_array(:,10)=events(:,13)==2;
 %annot_array(:,9)=events(:,13)==5;
 %annot_array(:,10)=events(:,13)==2;
 
-for c1=1:nume,  
+for c1=1:nume 
     c2=1;
     annot_array(c1,11)=sum( (events(c1,1)==varargin{c2}(:,1)&events(c1,2)>=varargin{c2}(:,2)-pad&events(c1,2)<=varargin{c2}(:,3)+pad& ...
                 events(c1,4)==varargin{c2}(:,1)&events(c1,5)>=varargin{c2}(:,2)-pad&events(c1,5)<=varargin{c2}(:,3)+pad) )>0;
