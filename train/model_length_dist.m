@@ -1,6 +1,7 @@
 function len_factor = model_length_dist( events,bins, CHR, sij1dx)
 %@param CHR is chromosome
-%@param sij1dx is one dimensional sij on the x-axis
+%@param sij1dx is one dimensional sij on the x-axis (one dimensional
+%breakpoint denisity also known as qi, qj, 
 %@param bins is a list of the start and end positions of the bins
 %@param events is the list of events (i.e. junctions)
 
@@ -11,22 +12,22 @@ sij1dy=sum(sij1dy0,2);
 % since sij1dx was choosen such that there are equal number of events I assume here equal distribution  
 d_sij1dx=diff(sij1dx)';
 sd_sij1dx(1)=d_sij1dx(1)/2;
-for c1=2:length(d_sij1dx),
+for c1=2:length(d_sij1dx)
     sd_sij1dx(1,c1)=sd_sij1dx(c1-1)+sum(d_sij1dx(c1-1:c1))/2;
 end
 sij1_area=sij1dy(1:end-1).*d_sij1dx;
 
-for c1=CHR,
+for c1=CHR
     numbins_chr(c1)=sum(bins(:,1)==c1);
 end
 
 numbins=length(bins);
 len_factor=sparse(sum(numbins_chr.*(numbins_chr+1))/2,length(d_sij1dx));
 ct=1;
-for c1=CHR,
+for c1=CHR
     firstbin=find(bins(:,1)==c1,1);
     lastbin=find(bins(:,1)==c1,1,'last');
-    for c2=firstbin:lastbin,
+    for c2=firstbin:lastbin
         diag_bin = sum(bins(c2,2:3),2)/2;        
         diag_bin_size = (bins(c2,3)-bins(c2,2))/2;
         sij1dx_b=sij1dx<diag_bin_size;

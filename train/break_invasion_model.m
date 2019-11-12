@@ -1,6 +1,7 @@
 
 global refgene sij1dx sij1dy
 global num_breakpoints_per_bin
+global WorkDir
 
 EventsFile=sv_file;
 
@@ -33,6 +34,7 @@ Weights_column = 11;
 
 [events0,masked_l1_events] = mask_events( events0,l1_track );
 
+
 % set bins boundries 
 [bins0, numbins] = SetBins(events0,num_breakpoints_per_bin,chsize,CHR,min_bin_dist); % returns a table of bins with chr number, start and end position, and number of breakpoints per bin
 
@@ -41,35 +43,36 @@ Weights_column = 11;
 
 [mfull0,bins_event_tble0] = BuildMatrix(events0,bins0,num_annot);
 
-[bins_event_tble, bins, mfull, events, removed_events] = RemoveSameSampleEvents(bins_event_tble0, bins0, mfull0, events0,Patient_column,1);
+[bins_event_tble, bins, mfull, events00, removed_events] = RemoveSameSampleEvents(bins_event_tble0, bins0, mfull0, events0,Patient_column,1);
 
-[bins_event_tble, bins, mfull, events, removed_events_std] = RemoveZeroVarSampleEvents(bins_event_tble, bins, mfull, events);
+[bins_event_tble, bins, mfull, events00, removed_events_std] = RemoveZeroVarSampleEvents(bins_event_tble, bins, mfull, events00);
 
-%for export to R
-mfull00 = mfull{1} + mfull{2} + mfull{3} + mfull{4};
-%dlmwrite('/Volumes/xchip_beroukhimlab/Kiran/adjancencies/mfull_weighted.txt', nonzeros(mfull00), 'delimiter','\t','newline','pc','precision',13);
+%for export to R to make exploratory graphs
+%mfull00 = mfull{1} + mfull{2} + mfull{3} + mfull{4};
+%dlmwrite('/Volumes/xchip_beroukhimlab/Kiran/adjancencies/mfull_unweighted_old.txt', nonzeros(mfull00), 'delimiter','\t','newline','pc','precision',13);
 
-R = MarginalProbability(bins_event_tble,events,numbins); 
+R = MarginalProbability(bins_event_tble,events00,numbins); 
 
-sij1dx = length_dist_1d_bins(events,chsize,10);
-sij1dy = EventLengthDist_G(sij1dx,events,0);
+sij1dx = length_dist_1d_bins(events00,chsize,10);
+sij1dy = EventLengthDist_G(sij1dx,events00,0);
 sij1dy = sum(sij1dy,2);
 sij1dy = sij1dy./sum(sij1dy(1:end-1).*diff(sij1dx'));
 
-%annot_array=event_annot(events,TAD_track,fragile_track,gene_track,cancer_genes_track);
+
 
 %no_annot is a boolean indicating whether CP_fragile or CP function should
-%be used 
+%be used. What is the difference? 
 no_annot=0;
 if no_annot    
+    annot_array=event_annot(events,TAD_track,fragile_track,gene_track,cancer_genes_track);
     fragile_annot=12;
-    sij = ConditionalProbability_fragile(events,annot_array(:,fragile_annot),bins_event_tble,chsize,bins,CHR,sij1dx);
+    sij = ConditionalProbability_fragile(events00,annot_array(:,fragile_annot),bins_event_tble,chsize,bins,CHR,sij1dx);
     
     [p, qe, qsolve] = q_solver(R, sij, 1);
     
 %    [qFDR_CV, pa_CV, pval_tophits_CV, mfull_pval_CV] = PVal(mfull{1}+mfull{2}+mfull{3}+mfull{4}, p, qe, sij, 1);
 else
-    [sij,sij1dy] = ConditionalProbability(events,chsize,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx);  % 3D matrix with conditional probability per annotation
+    [sij,sij1dy] = ConditionalProbability(events00,chsize,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx);  % 3D matrix with conditional probability per annotation
 
     [p, qe, qsolve] = q_solver(R, sum(sij,3), 1);
 

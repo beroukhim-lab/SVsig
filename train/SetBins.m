@@ -54,7 +54,5 @@ for c1 = CHR
 end
 
 if bins(end,4)==0,bins(end,:)=[];end
-
-numbins = length(bins);
-    
+numbins = length(bins);   
 

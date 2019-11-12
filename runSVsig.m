@@ -1,44 +1,11 @@
-%%%%%%%%% global variables%%%%%%%%%%%%%%%%%
-%@param local  = false means run on local machine, local = true means runs on server 
-local = true;
-%@param model_exist: to re-run background model set to false, to use loaded background model set to true 
-model_exist = false;
-%filter out all events that are less than 1MB
-len_filter=1e6;
-%@param bks_cluster determines whether PVal(fragile sites not accounted for) or PValMH(fragile sites accounted for) is used.
-%0 => PVal, 1=> PValMH. PValMH = 1 to replicate ofer's final results for
-%the ICGC paper
-%get very different results for when PVal = 0
- bks_cluster=0;
- %param FDR_threshold sets the q value cut off
- FDR_THRESHOLD = 0.1;
- %set random seed for reproducibility%
-rng(3014)
-%@param output_file: sets the name for the output file containing the significant 2D hits %
-%output_file = 'hitsalljunctions.txt'
-%@param num_breakpoints_per bin determines how many breakpoints are in one
-%bin (the smaller this is, the more bins are created and vice versa).
-%Adjust based on the size of the dataset! 
-%@param complex determines whether to use Ofer's v1.6 simple events or
-%Xiatong's jabba complex events 
-complex = true;                   
-global num_breakpoints_per_bin 
-%if complex
-%num_breakpoints_per_bin=1000; %Ofer's default was 100%Kiran's default for Xiaotong's Feb matrix was 1000
-%else 
-num_breakpoints_per_bin=100;
-%end
 
+function[hits_table] = runSVsig(local, model_exist, len_filter, bks_cluster, FDR_THRESHOLD, complex, num_breakpoints_per_bin, weights, prop_subset, std_filter, simulations)
+ 
+%global samp_num
+%samp_num is for the power analysis 
  %%%%%%set data directory%%%%%%%%%%%%%%%%
 
-if local
-pwd = '/Volumes/xchip_beroukhimlab/Kiran/git/2dmodel/SVsig' 
-else 
-pwd = '/xchip/beroukhimlab/Kiran/git/2dmodel/SVsig'
-end 
 
-WorkDir = pwd;
-addpath(genpath(pwd));
 %DataDir = strcat(WorkDir,'/data/');
 %TracksDir = strcat(WorkDir,'/tracks/');
 
@@ -53,49 +20,78 @@ addpath(genpath(pwd));
 %my sv_file from Xiatong's adjacency matrix 
 
 if local 
+       
     if complex 
-%sv_file ='/Volumes/xchip_beroukhimlab/Kiran/adjancencies/prepped_events.csv'
-sv_file = '/Volumes/xchip_beroukhimlab/Kiran/adjancencies/20190514prepped_weighted.csv'
-    else
+ sv_file ='/Volumes/xchip_beroukhimlab/Kiran/adjancencies/20190502prepped.csv' 
+        if weights
+sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/v16prepped_weighted_events_20190724.csv'
+        end 
+       
+    elseif simulations 
+   
+  %sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/20190910simulated_events.csv'    
+  %sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/20191104simulated_events_alpha0.csv'  
+  sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/20191106simulated_events_alpha1.csv'
+  
+  else 
+            
  sv_file='/Volumes/xchip_beroukhimlab/ofer/matlab/merged_1.6.1.csv'
-    end 
+    end
+    
+    
+    
 
-else 
+else
     if complex
-%sv_file = '/xchip/beroukhimlab/Kiran/adjancencies/prepped_events.csv'
- %sv_file = '/xchip/beroukhimlab/Kiran/adjancencies/20190502prepped.csv'
-  %dummy weights
-  sv_file = '/xchip/beroukhimlab/Kiran/adjancencies/20190514prepped_weighted.csv'
+        sv_file = '/xchip/beroukhimlab/Kiran/adjancencies/20190502prepped.csv' 
+       if weights 
+           sv_file = '/xchip/beroukhimlab/Kiran/complex/v16prepped_weighted_events_20190724.csv'
+       end
+        
+    elseif simulations 
+   
+  %sv_file = '/xchip_beroukhimlab/Kiran/complex/20190910simulated_events.csv'   
+   %sv_file = '/xchip/beroukhimlab/Kiran/complex/20191104simulated_events_alpha0.csv' 
+   sv_file = '/xchip/beroukhimlab/Kiran/complex/20191106simulated_events_alpha1.csv'
+
+   %sv_file = '/xchip/beroukhimlab/Kiran/adjancencies/prepped_events.csv'
     else 
  sv_file ='/xchip/beroukhimlab/ofer/matlab/merged_1.6.1.csv'
     end 
-    end
+end
+
+
+
+
 
 SVTable=readtable(sv_file, 'Delimiter', ',');
 
 
-%%%%%%%%%%%%load or create background model%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%load or create background model%%%%%%%%%%%%%%%%%%%
 
 if model_exist
  
     %override bks_cluster assignment in background model loading
     %bks_cluster = 1;
     if complex 
-       load ('backgroundmodel_adjacencies_20190321');
+       load ('backgroundmodel_adjacencies_weighted_20190524');
     else 
-        load 'ICGC_2D_SV_model.mat'
+        %something is not right with this background model?
+        load 'ICGC_2D_SV_model20190705_88hits.mat'
     end 
   else
 
     mixmodel;
-   save('backgroundmodel_adjacencies_20190502');
+   %save('ICGC_2D_SV_model20190705_88hits.mat')
+    %save('backgroundmodel_adjacencies_weighted_20190524');
+   %save('ICGC_2D_SV_model20190610.mat')
 end
 
 
 
 % EventLengthThreshold=1e2;
- 
-
+%  
+% 
 % % events array
 % %events 0 seems to be an entirely numeric representation of SV table
 % events0=zeros(height(SVTable),12);
@@ -152,16 +148,16 @@ end
 % % filter mask track
 % [events0,masked_events] = mask_events( events0,mask_track );
 % disp(strcat('total events after masked regions: ',num2str(length(events0))));
-
-
-%  events matrix
-%bin the events? %what is happening in this for loop below?
-
-
-%%%%%%%%%%%%start here if model exists%%%%%%%%%%%%%%%%%%%%%%
-%this matrix is not by rearrangment type (inversion, deletion, duplication)
-%bin the events matrix 
-%using mfull is okay but mfull00 (in break_invasion_model) has more stringent requirements for filtering events 
+% 
+% 
+%  %events matrix
+% %bin the events? %what is happening in this for loop below?
+% 
+% 
+% %%%%%%%%%%%start here if model exists%%%%%%%%%%%%%%%%%%%%%%
+% %this matrix is not by rearrangment type (inversion, deletion, duplication)
+% %bin the events matrix 
+% %using mfull is okay but mfull00 (in break_invasion_model) has more stringent requirements for filtering events 
 % mfull0=sparse(length(bins),length(bins));
 % bins_event_tble0=zeros(length(events0),3);
 % for c1 = 1:length(events0)
@@ -201,9 +197,9 @@ end
 % 
 % 
 % % update mfull by rebuilding it using events, which is a filtered version
-% of events0 (used to be original mfull0)
+% %of events0 (used to be original mfull0)
 % mfull=sparse(length(bins),length(bins));
-% for c1 = 1:length(events),
+% for c1 = 1:length(events)
 %     bini0=find(bins(:,1)==events(c1,1) & bins(:,2)<=events(c1,2) & bins(:,3)>=events(c1,2));
 %     binj0=find(bins(:,1)==events(c1,4) & bins(:,2)<=events(c1,5) & bins(:,3)>=events(c1,5));
 %     if ~isempty(bini0) && ~isempty(binj0)
@@ -215,22 +211,27 @@ end
 %use mfull00 over mfull' + mfull because the events in mfull00 are filtered
 %more stringently`ewq
 if ~bks_cluster
+   if weights 
+       [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom(mfull00, mix_model, [], []);
     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull+mfull', mix_model, [], [],1, FDR_THRESHOLD);
-    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull00, mix_model, [], [],1, FDR_THRESHOLD);
+   else 
+    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull00, mix_model, [], [],1);
+   end 
+
 else
-    sij1dx = length_dist_1d_bins(events,chsize,10);
+    sij1dx = length_dist_1d_bins(events00,chsize,10);
     %PValMH adjusts for clustered fragile sites within bins whereas PVal does not
     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull+mfull', mix_model, bins, events, sij1dx, chsize, CHR, 1, 0.1, 0);
-    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull00, mix_model, bins, events, sij1dx, chsize, CHR, 1, 0.1, 0);
+    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
 end
 
 
-[hitstable_mix,hitstable_mix_lookup] = HitsTableCV(mfull_pval_mix,pa_mix, pval_tophits_mix, bins_event_tble, qFDR_mix, events, refgene_tble);
+[hitstable_mix,hitstable_mix_lookup] = HitsTableCV(mfull_pval_mix,pa_mix, pval_tophits_mix, bins_event_tble, qFDR_mix, events00, refgene_tble);
 
 CuratedFusionGene0=CuratedFusionGene(1:end-3,:);
 TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene,refgene_tble, [] ,CosmicCencus,CuratedFusionGene0,[]);
 
-
+%%%%%%%%%FILTRATION%%%%%%%%%%%%%%%%%%%%%%%%%
 %only include hits that are interchromosomal or large than the length
 %filter
 
@@ -246,16 +247,20 @@ end
 TbyGene_mix_lf = TbyGene_mix(hit_2_include);
         
 
-%written by Kiran 3/25/19
-%create a list of the unique significant tiles
-sig_tiles = table();
-sig_tiles.chri = bins(hitstable_mix_lookup(:,1), 1); 
-sig_tiles.starti = bins(hitstable_mix_lookup(:,1), 2);
-sig_tiles.endi = bins(hitstable_mix_lookup(:,1), 3);
-sig_tiles.chrj = bins(hitstable_mix_lookup(:,2), 1);
-sig_tiles.startj = bins(hitstable_mix_lookup(:,2), 2);
-sig_tiles.endj = bins(hitstable_mix_lookup(:,2), 3);
-%sig_tile.qval = hitstable_mix(hitstable_mix_lookup(,:1:2),5)
+%for export into tile merging, etc. in R 
+%dlmwrite('/Volumes/xchip_beroukhimlab/Kiran/adjancencies/20190529wbins.txt', bins, 'delimiter','\t','newline','pc','precision',13);
+%dlmwrite('/Volumes/xchip_beroukhimlab/Kiran/adjancencies/20190529whitstable.txt', hitstable_mix, 'delimiter','\t','newline','pc','precision',13);
+
+% %written by Kiran 3/25/19
+% %create a list of the unique significant tiles
+% sig_tiles = table();
+% sig_tiles.chri = bins(hitstable_mix_lookup(:,1), 1); 
+% sig_tiles.starti = bins(hitstable_mix_lookup(:,1), 2);
+% sig_tiles.endi = bins(hitstable_mix_lookup(:,1), 3);
+% sig_tiles.chrj = bins(hitstable_mix_lookup(:,2), 1);
+% sig_tiles.startj = bins(hitstable_mix_lookup(:,2), 2);
+% sig_tiles.endj = bins(hitstable_mix_lookup(:,2), 3);
+% %sig_tile.qval = hitstable_mix(hitstable_mix_lookup(,:1:2),5)
 
 %sig_tiles.numevents = for each row count the number of events that are BOTH in bin i and bin j 
 %writetable(unique(sig_tiles), '/xchip/beroukhimlab/Kiran/adjancencies/sigbinstest20190325', 'delimiter','\t')
@@ -267,7 +272,7 @@ hits_table.sid = annotated_table.sid;
 hits_table.gene_i = annotated_table.gene_i;
 hits_table.gene_j = annotated_table.gene_j;
 
-%hits_table.subtype = annotated_table.subtype;
+hits_table.subtype = annotated_table.dcc_project_code;
 hits_table.chr_i = annotated_table.seqnames;
 hits_table.pos_i = annotated_table.start;
 hits_table.strand_i = annotated_table.strand;
@@ -275,15 +280,116 @@ hits_table.chr_j = annotated_table.altchr;
 hits_table.pos_j = annotated_table.altpos;
 hits_table.strand_j = annotated_table.altstrand;
 hits_table.pval = annotated_table.pval;
+hits_table.prob = annotated_table.p_mix;
 
 
+
+
+
+%annotate number of hits 
+%v = accumarray(hits_table.cluster_num, 1);
+%for c1= 1:size(hits_table, 1)
+%hits_table.num_hits(c1) = v(hits_table.cluster_num(c1));
+%end 
+    
 
 %written by Kiran 3/8/19
 %remove entries from hits_table that have only supported by 1 sample
-v = accumarray(hits_table.cluster_num, 1);                  % Tally Occurrences Of Rows
-u_cluster_id =  unique(hits_table.cluster_num);  %unique cluster_ids
-indices = u_cluster_id ( v > 1); %Which clusters have greater than 1 occurence
-hits_table = hits_table(ismember(hits_table.cluster_num, indices),:); %kwwp hits have greater than 1 occurence
-disp(strcat(num2str(length(v) - length(v(v>1))), '   hits are supported by only one sample'));
+% v = accumarray(hits_table.cluster_num, 1);                  % Tally Occurrences Of Rows
+% u_cluster_id =  unique(hits_table.cluster_num);  %unique cluster_ids
+% indices = u_cluster_id ( v > 1); %Which clusters have greater than 1 occurence
+% hits_table = hits_table(ismember(hits_table.cluster_num, indices),:); %kwwp hits have greater than 1 occurence
+% disp(strcat(num2str(length(v) - length(v(v>1))), '   hits are supported by only one sample'));
 
-%writetable(hits_table, output_file,'delimiter','\t')
+%remove samples that have only 1 unique sample id (i.e. those that are
+%supported by only 1 sample)
+disp(strcat('the number of hits pre-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
+h1=1;
+clusters_to_keep = [];
+num_samp = zeros(0,length(unique(hits_table.cluster_num)));
+for c1= 1:length(unique(hits_table.cluster_num))
+
+ %find all the samples for the particular cluster_num
+ idx = find(hits_table.cluster_num==c1);
+  subtable = hits_table(idx, :);
+  
+  %annotate number of unique samples per hit
+ num_samp(c1) = length(unique(subtable.sid));
+  
+  %are all the hits from the same sample?
+  %are the breakpoints greater than a standard deviation of 10?
+ if (size(unique(subtable.sid),1) > 1  && std(subtable.pos_i) > std_filter && std(subtable.pos_j) > std_filter)
+     cluster_to_keep(h1) = c1; 
+     h1 = h1 + 1;
+
+end 
+end 
+
+%put num_samp in the hits_table
+for c1= 1:size(hits_table, 1)
+hits_table.num_hits(c1) = num_samp(hits_table.cluster_num(c1));
+end 
+    
+
+%keep only the clusters that pass filteration criteria
+keep = ismember(hits_table.cluster_num, cluster_to_keep);
+
+hits_table = hits_table(keep, :);
+
+disp(strcat('the number of hits post-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
+%how many SRJs do we find?
+%n_hits = length(unique(hits_table.cluster_num));
+%writetable(hits_table, '/Volumes/xchip_beroukhimlab/Kiran/adjancencies/power_calculations/20190705hitstableforrobustness.txt','delimiter','\t')
+
+%%%%%%%%%%%FOR POWER ANALYSIS%%%%%%%%%%%%
+
+%create subcurves for power analysis 
+% hits_table.prevalent = zeros(size(hits_table, 1),1);
+% n_hprev = 0; 
+% for c1= 1:length(unique(hits_table.cluster_num))
+%    idx = find(hits_table.cluster_num==c1);
+%   subtable = hits_table(idx, :);
+%   for c2 = 1:length(unique(subtable.subtype))
+%   %count the number of unique samples with this particular subtype
+%   count = length(unique(subtable.sid));
+%   %divide by all samples 
+%   total = sum(ismember(SVTable.dcc_project_code,subtable.subtype(c2)));
+%   if(count/total > .12) 
+%    %disp(num2str(c1))
+%    %annotate hitstable
+%    hits_table.prevalent(idx) = 1;
+%    n_hprev = n_hprev + 1;
+%    
+%   end 
+%   end
+% end 
+
+
+%%%%%%%%%%%%%FOR POWER ANALYSIS%%%%%%%%%%%% 
+%read in hits with robustness annotated
+
+% robust_table = readtable('20190708robustness_factor_top_hits.txt');
+% [token,remain] = strtok(robust_table.hit_name, "_");
+% robust_table.gene_i = token;
+% robust_table.gene_j =  erase(remain,"_");
+% 
+% %merge robust table and hit table on gene_i and gene_j
+% robust_hits_table = innerjoin(robust_table, hits_table,'Keys',{'gene_i', 'gene_j'});
+% 
+% %how many are highly robust?
+% idx_high = find(robust_hits_table.p_robust >= 7);
+% n_high = length(unique(robust_hits_table(idx_high, :).cluster_num));
+% 
+% %how many are medium robust?
+% idx_med = find(robust_hits_table.p_robust <  7 & robust_hits_table.p_robust >=  2);
+% n_med = length(unique(robust_hits_table(idx_med, :).cluster_num));
+% 
+% 
+% %how many are low robust?
+% idx_low = find(robust_hits_table.p_robust < 2);
+% n_low = length(unique(robust_hits_table(idx_low, :).cluster_num));
+end   
+
+
+
+

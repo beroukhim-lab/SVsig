@@ -1,4 +1,5 @@
 function [output, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2] = GenerateSVarray(input,length_th,CHR,Tumor_column,Event_column,Sample_column,Patient_column,Weights_column)
+global samp_num
 
 %Tumor_column = 7;
 %Sample_column = 10;
@@ -12,6 +13,9 @@ function [output, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2] = Gener
 disp('generating events array...');
 
 snowman_table=readtable(input);
+
+
+
 [Ustrand1, ia_strand1, ic_strand1]=unique(snowman_table(:,3));
 output(:,3)=ic_strand1;
 [Ustrand2, ia_strand2, ic_strand2]=unique(snowman_table(:,6));
@@ -19,7 +23,7 @@ output(:,6)=ic_strand2;
 output(:,2)=table2array(snowman_table(:,2));
 output(:,5)=table2array(snowman_table(:,5));
 
-if ~isempty(Tumor_column),
+if ~isempty(Tumor_column)
     [UTumor, ia_code, ic_code]=unique(snowman_table(:,Tumor_column));
     output(:,7)=ic_code;
 end
@@ -31,7 +35,7 @@ if ~isempty(Sample_column)
     [Usample, ia_sample, ic_sample]=unique(snowman_table(:,Sample_column));
     output(:,9)=ic_sample;
 end
-if ~isempty(Patient_column),
+if ~isempty(Patient_column)
     [Upatient, ia_patient, ic_patient]=unique(snowman_table(:,Patient_column));
     output(:,10)=ic_patient;
 end
@@ -51,7 +55,16 @@ if size(snowman_table,2)>11
     output(:,15)=snowman_table.homseq;
 end
 
+%choose samples to include if subsetting and only keep those in output
 
+if ~isempty(samp_num)
+ %randomly select patients WITHOUT REPLACEMENT
+idx = randsample(size(Upatient, 1), samp_num, false);
+%subset the output and snowman_table    
+idxl = ismember(output(:,10), idx); %find rows
+output = output(idxl, :);
+snowman_table = snowman_table(idxl, :);
+end 
 
 if 0 % changed 10/30/2016
     snowman=table2struct(snowman_table);
@@ -74,6 +87,9 @@ for c1=1:24
         chr_idx=(output(:,1)==c1 | output(:,4)==c1);
         output(chr_idx,:)=[];
     end
+    
+    
+ 
 end
 
 %save icgc_snowman output Ucode Ustrand1 Ustrand2

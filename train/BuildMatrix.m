@@ -19,7 +19,9 @@ end
 %chr_j, column 5: start_j, column 6: stand_j
 
 %initialize bins_event_tble
-bins_event_tble = zeros(length(events),5);
+%changed from 5 to 3 columns because 4th and 5th columns were not being
+%used
+bins_event_tble = zeros(length(events),3);
 
 %loop through all events (table of pairs of breakpoints)
 %for each row

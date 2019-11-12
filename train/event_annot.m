@@ -18,6 +18,11 @@ function annot_array=event_annot(events,varargin)
 % 9: TADs events
 
 
+%events matrix column organization
+%12: topo
+%13: topo_n
+%14: mech
+%15:homseq
 
 short=1e6;
 %long=1e7;
@@ -31,16 +36,16 @@ annot_array(:,1)=ones(nume,1);
 annot_array(:,2)=events(:,1)==events(:,4)&abs(events(:,5)-events(:,2))<=short;
 annot_array(:,3)=events(:,1)==events(:,4)&abs(events(:,5)-events(:,2))>short;
 annot_array(:,4)=events(:,1)~=events(:,4);
-annot_array(:,5)=events(:,12)==1;
-annot_array(:,6)=events(:,12)>1;
-annot_array(:,7)=events(:,13)==3|events(:,13)==5&events(:,14)<=2;
-annot_array(:,8)=events(:,13)==3|events(:,13)==5&events(:,14)>2&events(:,14)<13;
-annot_array(:,9)=events(:,13)>=3&events(:,13)<=6&events(:,14)>=13;
-annot_array(:,10)=events(:,13)==2;
-%annot_array(:,7)=events(:,13)==4|events(:,13)==6;
-%annot_array(:,8)=events(:,13)==3;
-%annot_array(:,9)=events(:,13)==5;
-%annot_array(:,10)=events(:,13)==2;
+annot_array(:,5)=events(:,13)==1;
+annot_array(:,6)=events(:,13)>1;
+annot_array(:,7)=events(:,14)==3|events(:,14)==5&events(:,15)<=2;
+annot_array(:,8)=events(:,14)==3|events(:,14)==5&events(:,15)>2&events(:,15)<13;
+annot_array(:,9)=events(:,14)>=3&events(:,14)<=6&events(:,15)>=13;
+annot_array(:,10)=events(:,14)==2;
+%annot_array(:,7)=events(:,14)==4|events(:,14)==6;
+%annot_array(:,8)=events(:,14)==3;
+%annot_array(:,9)=events(:,14)==5;
+%annot_array(:,10)=events(:,14)==2;
 
 for c1=1:nume 
     c2=1;

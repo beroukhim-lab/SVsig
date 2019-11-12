@@ -1,16 +1,22 @@
-function [qFDR, pa, pval_tophits,mfull] = PVal(mfull, p, qe, sij,approx_flag, FDR_THRESHOLD)
-
+function [qFDR, pa, pval_tophits,mfull] = PVal(mfull, p, qe, sij,approx_flag)
+global FDR_THRESHOLD 
 qqplot_flag = 0;
+%reproducible results
+rng(3014)
 
 % general variables
 mat_size = size(mfull);
 
 % keep only upper diagonal part of mfull 
 mfull = triu(full(mfull));
+%divide all diagonal elements by 2 (because we only want to count events in
+%i,i bins once (we added mfull + mfull' which effectively counted them
+%twice)
 mfull(eye(mat_size)~=0) = diag(mfull)/2;
+%
 nume = sum(mfull(:));
 
-% probability matrix
+% create probability matrix
 if isempty(p)
     pa = bsxfun(@times,qe,sij);
     pa = triu(pa + pa');
@@ -75,8 +81,6 @@ qFDR=mafdr(pval(:,1),'BHFDR','true');
 hits_idx=find(qFDR< FDR_THRESHOLD);
 tophits=length(hits_idx);
 pval_tophits = pval(1:tophits,:);
-%to get all the tiles as hits in order to get the nice matrix from
-%HitsTableCV we just make pval top hits be all the hits
-%pval_tophits = pval; 
+ 
 return
 

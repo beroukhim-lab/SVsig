@@ -63,9 +63,16 @@ for c1=CHR,
     sij(c2,c2+1:lastbin,:) = bsxfun(@times,upper_diag,bins(c2+1:lastbin,3)-bins(c2+1:lastbin,2));
     last_diag = find(sij1dx<diag_bin_size,1,'last');
     % add similar correction to bin 2 and 3...
-    sij(c2,c2,:) = ( (1-sd_sij1dx(1:last_diag-1)/diag_bin_size)*squeeze(sij1_area(1:last_diag-1,c1,:)) + (diag_bin_size - sij1dx(last_diag)-1)^2/diag_bin_size/2 * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));
+    %Kiran: fix bug for last_diag = = 2 
+        if last_diag == 2 
+        sij(c2, c2, :) = ( (1-sd_sij1dx(1:last_diag-1)/diag_bin_size)*squeeze(sij1_area(1:last_diag-1,c1,:))' + (diag_bin_size - sij1dx(last_diag)-1)^2/diag_bin_size/2 * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));      
+        else
+        sij(c2,c2,:) = ( (1-sd_sij1dx(1:last_diag-1)/diag_bin_size)*squeeze(sij1_area(1:last_diag-1,c1,:)) + (diag_bin_size - sij1dx(last_diag)-1)^2/diag_bin_size/2 * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));
+        end 
+    
+   % sij(c2,c2,:) = ( (1-sd_sij1dx(1:last_diag-1)/diag_bin_size)*squeeze(sij1_area(1:last_diag-1,c1,:)) + (diag_bin_size - sij1dx(last_diag)-1)^2/diag_bin_size/2 * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));
 %    sij(c2,c2,:) = (sum(bsxfun(@times,squeeze(sij1dy(1:last_diag-1,c1,:)),diff(sij1dx(1:(last_diag)))')) + (diag_bin_size - sij1dx(last_diag)-1) * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));
-    for c2=firstbin+1:lastbin,
+    for c2=firstbin+1:lastbin
         diag_bin = sum(bins(c2,2:3),2)/2;
         diag_bin_size=(bins(c2,3)-bins(c2,2));
         upper_diag_bins=sum(bins(c2+1:lastbin,2:3),2)/2-diag_bin;
@@ -73,8 +80,14 @@ for c1=CHR,
         upper_diag=(interp1(sij1dx',squeeze(sij1dy(:,c1,:)),upper_diag_bins-half_size,'pchip')+interp1(sij1dx',squeeze(sij1dy(:,c1,:)),upper_diag_bins+half_size,'pchip'))/2;
         sij(c2,c2+1:lastbin,:) = bsxfun(@times,upper_diag,bins(c2+1:lastbin,3)-bins(c2+1:lastbin,2));
         last_diag = find(sij1dx<diag_bin_size,1,'last');
+        %Kiran: fix bug for last_diag = = 2 
+        if last_diag == 2 
+        sij(c2, c2, :) = ( (1-sd_sij1dx(1:last_diag-1)/diag_bin_size)*squeeze(sij1_area(1:last_diag-1,c1,:))' + (diag_bin_size - sij1dx(last_diag)-1)^2/diag_bin_size/2 * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));      
+        else
         sij(c2,c2,:) = ( (1-sd_sij1dx(1:last_diag-1)/diag_bin_size)*squeeze(sij1_area(1:last_diag-1,c1,:)) + (diag_bin_size - sij1dx(last_diag)-1)^2/diag_bin_size/2 * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));
-%        sij(c2,c2,:) = (sum(bsxfun(@times,squeeze(sij1dy(1:last_diag-1,c1,:)),diff(sij1dx(1:(last_diag)))')) + (diag_bin_size - sij1dx(last_diag)-1) * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));
+        end  
+        
+        %        sij(c2,c2,:) = (sum(bsxfun(@times,squeeze(sij1dy(1:last_diag-1,c1,:)),diff(sij1dx(1:(last_diag)))')) + (diag_bin_size - sij1dx(last_diag)-1) * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));
     end
     
     inter_area = (lastbin-firstbin+1)*(bpsize-(bins(lastbin,3)-bins(firstbin,2)));
