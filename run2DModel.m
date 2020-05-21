@@ -1,6 +1,6 @@
 %%%%%%%%% global variables%%%%%%%%%%%%%%%%%
 %@param local  = false means run on local machine, local = true means runs on server 
-local = false;
+local = true;
 %@param model_exist: to re-run background model set to false, to use loaded background model set to true 
 model_exist = false;
 %filter out all events that are less than 1MB at the end
@@ -24,11 +24,9 @@ len_filter=1e6;
 %Xiatong's jabba complex events 
 global complex
 complex = false;                   
-global num_breakpoints_per_bin 
-%if complex
-%num_breakpoints_per_bin=1000; %Ofer's default was 100%Kiran's default for Xiaotong's Feb matrix was 1000
+global num_breakpoints_per_bin %Ofer's default was 100%Kiran's default for Xiaotong's Feb matrix was 1000
 %else %300 for complex weighted model
-num_breakpoints_per_bin=200;
+num_breakpoints_per_bin=100;
 %end
 %@param weights
 %Do the events have non-integer weights?
@@ -39,7 +37,10 @@ weights = false;
 std_filter = 10;
 %@param simulations, run the model on simulated data (yes == 1, no == 0)
 global simulations
-simulations = false; 
+simulations = true; 
+%which chromosomes to consider in building the matrix
+global CHR
+CHR = 1:23;
 
 %%% set working directory%%%%%%
 if local
@@ -53,8 +54,25 @@ WorkDir = pwd;
 addpath(genpath(pwd));
 
 
+%run at different len_filters and number of breakpoints per bin at double the background rate
+%num_hits = zeros(2, 4);
+%for c1 = 1:2
+ %for c2 = 1:4
+%lf = [0, 1e6]; 
+%nbb = [100, 200, 500, 1000]; 
 
+%run msdel
+%num_breakpoints_per_bin = nbb(c2);
+%disp(num_breakpoints_per_bin)
+%hits_table = runSVsig(local, model_exist, lf(c1), bks_cluster, FDR_THRESHOLD, complex, num_breakpoints_per_bin, weights, [], std_filter, simulations);
+%num_hits(c1, c2) = length(unique(hits_table.cluster_num));
+%writetable(hits_table, strcat('/Volumes/xchip_beroukhimlab/Kiran/complex/20191113simulationsbin', num2str(num_breakpoints_per_bin),'filter', num2str(lf(c1)), '.txt'),'delimiter','\t')
+
+ 
+ %end 
+%end 
 
 %run model
 hits_table = runSVsig(local, model_exist, len_filter, bks_cluster, FDR_THRESHOLD, complex, num_breakpoints_per_bin, weights, [], std_filter, simulations);
-%writetable(hits_table, '/Volumes/xchip_beroukhimlab/Kiran/complex/20190729RESULTS.txt','delimiter','\t')
+%writetable(hits_table, '/xchip/beroukhimlab/Kiran/complex/20200212regularbackgroundrate5e5lengthfilter','delimiter','\t')
+    

@@ -25,15 +25,16 @@ if local
  sv_file ='/Volumes/xchip_beroukhimlab/Kiran/adjancencies/20190502prepped.csv' 
         if weights
 sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/v16prepped_weighted_events_20190724.csv'
+%sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/v16prepped_weighted_events_20200206.csv'
         end 
        
     elseif simulations 
    
-  %sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/20190910simulated_events.csv'    
-  %sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/20191104simulated_events_alpha0.csv'  
-  sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/20191106simulated_events_alpha1.csv'
-  
-  else 
+  %sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/20191121simulatedalpha0.csv'
+  sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20191121simulatedalpha1.csv"
+  %sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20191202_10nsimulatedalpha1.csv" 
+   %sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20200422simtoyalpha1.csv"
+    else 
             
  sv_file='/Volumes/xchip_beroukhimlab/ofer/matlab/merged_1.6.1.csv'
     end
@@ -46,15 +47,14 @@ else
         sv_file = '/xchip/beroukhimlab/Kiran/adjancencies/20190502prepped.csv' 
        if weights 
            sv_file = '/xchip/beroukhimlab/Kiran/complex/v16prepped_weighted_events_20190724.csv'
+            %sv_file = '/xchip/beroukhimlab/Kiran/complex/v16prepped_weighted_events_20200206.csv'
        end
         
     elseif simulations 
-   
-  %sv_file = '/xchip_beroukhimlab/Kiran/complex/20190910simulated_events.csv'   
-   %sv_file = '/xchip/beroukhimlab/Kiran/complex/20191104simulated_events_alpha0.csv' 
-   sv_file = '/xchip/beroukhimlab/Kiran/complex/20191106simulated_events_alpha1.csv'
-
-   %sv_file = '/xchip/beroukhimlab/Kiran/adjancencies/prepped_events.csv'
+%sv_file = "/xchip/beroukhimlab/Kiran/complex/20191121simulatedalpha0.csv"
+sv_file = "/xchip/beroukhimlab/Kiran/complex/20191121simulatedalpha1.csv"
+%sv_file = "/xchip/beroukhimlab/Kiran/complex/20191202_10nsimulatedalpha1.csv"
+%sv_file = "/xchip/beroukhimlab/Kiran/complex/20200422simtoyalpha1.csv"
     else 
  sv_file ='/xchip/beroukhimlab/ofer/matlab/merged_1.6.1.csv'
     end 

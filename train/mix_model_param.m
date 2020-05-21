@@ -20,7 +20,6 @@ annot_tiles=tiles_annot('length',events,bins,CHR);
 % setting up some needed variables
 num_param=length(annot_tiles(1,1,:));
 alpha=0.5*ones(num_param,1);
-
 if issymmetric(model1)
     model1=triu(model1);
     model1(eye(size(model1))==1)=diag(model1)/2;
@@ -42,7 +41,10 @@ end
 %continous binomial and the density function for cbinom is in R 
  if complex && weights   
      save('debug_alpha')
+     % for 1MB somatic distance cutoff in Xiatong's promiximity matrix
      load('cbinom_alpha.mat');
+     %for 50 kb somatic distance cutoff in X's prox matrix 
+     %load('2020021050kbcbinom_alpha.mat')   
      disp('loading continous binomial alpha parameters')
  else 
 %calculating log factorial--faster than calculating factorial then taking
@@ -58,7 +60,10 @@ alphas = zeros(10,3);
 
 for k1 = 1:10 
 nume=sum(mfull(:));
-alpha=rand(num_param,1)
+alpha=rand(num_param,1);
+nume_1 = sum(mfull(annot_tiles(:,:,1)));
+nume_2 = sum(mfull(annot_tiles(:,:,2)));
+nume_3 = sum(mfull(annot_tiles(:,:,3)));
 
 % optimize over model
 %fincom
@@ -81,13 +86,17 @@ end
 
 %pattern search
 %use matlab version in applications for this
-%options = optimoptions('patternsearch','MaxIterations',150,'MeshTolerance',1e-6);
+%options = optimjoptions('patternsearch','MaxIterations',150,'MeshTolerance',1e-6);
 %[opt_alpha,f_bic] = patternsearch(@mix_optim_fun,alpha,[],[],[],[],zeros(num_param,1), ones(num_param,1),[],options);
 
  
  end 
 %set mix_model for the optimal alpha (this is the final mix model that will be returned by the function) 
+%alternative for testing alpha simulations
+%mix_model = zeros(size(model1));
 mix_model=zeros(size(mfull));
+
+
 for c1=1:num_param
     mix_model(annot_tiles(:,:,c1)) =  mix_model(annot_tiles(:,:,c1)) + opt_alpha(c1)*model1(annot_tiles(:,:,c1))+(1-opt_alpha(c1))*model2(annot_tiles(:,:,c1));
 end
@@ -110,17 +119,26 @@ mix_model=mix_model/sum(mix_model(:));
      
         nnz_idc=mix_model>0&mfull>0;
 %        nnz_idc=mix_model>0;
-     
+         z_idc =  mfull == 0;     
+
 %mfull are the values of the "poisson" distributed xij, mix_model are the
 %pijs, nume is N 
         sLij = sum(sum(mfull(nnz_idc).*log(nume*mix_model(nnz_idc))-nume*mix_model(nnz_idc)-log_fac(mfull(nnz_idc)+1)'));
-
+        zLij = sum(sum(-nume*mix_model(z_idc)));      
+  
+%parameter penality
+dbj_param = 10;
+ penalty1 = (1 - alpha(1))* dbj_param;
+ penalty2 = (1 - alpha(2)) * dbj_param;
+ penalty3 = (1- alpha(3)) * dbj_param;
+ %3 added terms to BIC as penalty
         % the BIC value
-     BIC = -2*sLij+log(nume)*num_param
-    
+    % BIC = -2*(sLij + zLij)+log(nume)*num_param
+      BIC = -2*(sLij + zLij)+log(nume_1)*penalty1 + log(nume_2)*penalty2 + log(nume_3)*penalty3;
+      
     end
  
-save('simple_alpha')
+%save('simple_alpha')
 
  end
 %import opt_alpha
