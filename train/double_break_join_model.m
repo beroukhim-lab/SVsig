@@ -1,6 +1,6 @@
 nume=length(events00);
 
-[sij1dy_l,opt1dy0_l,fval0_l,lij,intra_chr_l] = Lijo ptim_to_length(events00,chsize,bins,CHR,R,mfull{1}+mfull{2}+mfull{3}+mfull{4},sij1dx,len_factor);
+[sij1dy_l,opt1dy0_l,fval0_l,lij,intra_chr_l] = Lijoptim_to_length(events00,chsize,bins,CHR,R,mfull{1}+mfull{2}+mfull{3}+mfull{4},sij1dx,len_factor);
 
 Rn=R;
 Rn=2*Rn/sum(Rn);
