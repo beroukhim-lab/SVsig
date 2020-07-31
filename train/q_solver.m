@@ -1,4 +1,7 @@
 function [p, qe, qsolve] = q_solver(R, sij,stat_out)
+global firstbin
+global lastbin
+global intra_chr_a
 
 
 if abs(sum(R)-2) > 1e-3
@@ -27,8 +30,22 @@ end
 
 p0 = bsxfun(@times,qe,sij);
 p=p0+p0';
+
+%fix ratio of ic probabilities: non-ic probabilities
+%to reflect ratio of ic events:non ic events
+%ratio = sum(sum(p(chr_intra, chr_intra)))/sum(sum(p));
+ratio = (sum(sum((p(firstbin:lastbin,lastbin+1:end)))) + sum(sum(p(firstbin:lastbin,1:firstbin-1))))/sum(sum(p));
+
+
+%want ratio to be 1-  intra_chr_a
+p(firstbin:lastbin,lastbin+1:end) = ((1 - intra_chr_a)/ratio)*p(firstbin:lastbin,lastbin+1:end);
+p(firstbin:lastbin,1:firstbin-1) = ((1 - intra_chr_a)/ratio)*p(firstbin:lastbin, 1:firstbin-1);
+
+%normalize
 p = 2*p/sum(sum(p));
 
+%recalculate ratio
+(sum(sum((p(firstbin:lastbin,lastbin+1:end)))) + sum(sum(p(firstbin:lastbin,1:firstbin-1))))/sum(sum(p))
 %check solution
 if stat_out
 

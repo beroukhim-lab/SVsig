@@ -2,13 +2,17 @@
 global refgene sij1dx sij1dy
 global num_breakpoints_per_bin
 global WorkDir
+global complex
+global weights
+global CHR
 
 EventsFile=sv_file;
 
 load(strcat(WorkDir,'/tracks/MiscVar')); % run gen_misc_var to update variables
 fragile_track=importdata([WorkDir '/tracks/fragile_genes_smith.hg19fp.bed.txt']);
 
-CHR = 1:23; % chromosomes to include in analysis
+% CHR = 1:23; % chromosomes to include in analysis
+%now global variable
 EventLengthThreshold=200; % filter short event [bp] 
 %num_breakpoints_per_bin=1000; %def= 80
 num_annot=4;
@@ -45,7 +49,11 @@ Weights_column = 11;
 
 [bins_event_tble, bins, mfull, events00, removed_events] = RemoveSameSampleEvents(bins_event_tble0, bins0, mfull0, events0,Patient_column,1);
 
+%remove events in the same nucleotide (artifacts)
 [bins_event_tble, bins, mfull, events00, removed_events_std] = RemoveZeroVarSampleEvents(bins_event_tble, bins, mfull, events00);
+
+%save bins to compare to TADs size distributions
+%dlmwrite(strcat('/Volumes/xchip_beroukhimlab/Kiran/complex/bins', num2str(num_breakpoints_per_bin), '.txt'), bins, 'delimiter','\t','newline','pc','precision',13);
 
 %for export to R to make exploratory graphs
 %mfull00 = mfull{1} + mfull{2} + mfull{3} + mfull{4};
@@ -61,10 +69,17 @@ sij1dy = sij1dy./sum(sij1dy(1:end-1).*diff(sij1dx'));
 
 
 %no_annot is a boolean indicating whether CP_fragile or CP function should
-%be used. What is the difference? 
-no_annot=0;
+%be used. What is the difference?
+%if complex && weights 
+%no_annot = 0; 
+%else 
+%no_annot=1;
+%end 
+
+no_annot = 0; 
+
 if no_annot    
-    annot_array=event_annot(events,TAD_track,fragile_track,gene_track,cancer_genes_track);
+    annot_array=event_annot(events00,TAD_track,fragile_track,gene_track,cancer_genes_track);
     fragile_annot=12;
     sij = ConditionalProbability_fragile(events00,annot_array(:,fragile_annot),bins_event_tble,chsize,bins,CHR,sij1dx);
     

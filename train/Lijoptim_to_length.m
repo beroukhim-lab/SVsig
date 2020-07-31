@@ -30,7 +30,7 @@ inter_chr=inter_chr/2/nume;
 inter_lij=inter_chr/inter_rij;
 
 % calculate the 1D Sij distribution
-
+%sidjx indicates bins that are chosen for empirical distribution
 sij1dy = EventLengthDist_G(sij1dx,events,0);
 sij1dy = sum(sij1dy,2)/length(sij1dy(1,:));
 sij1dy = sij1dy/sum(sij1dy);
