@@ -46,14 +46,15 @@ if ~isempty(Weights_column)
     output(:,11) = snowman_table.weights;
 end
 
-if size(snowman_table,2)>11
-    [Utopo, ia_topo, ic_topo]=unique(snowman_table.topo);
-    output(:,12)=ic_topo;
-    output(:,13)=snowman_table.topo_n;
-    [Umech, ia_mech, ic_mech]=unique(snowman_table.mech);
-    output(:,14)=ic_mech;
-    output(:,15)=snowman_table.homseq;
-end
+%this is not useful
+%if size(snowman_table,2)>11
+%    [Utopo, ia_topo, ic_topo]=unique(snowman_table.topo);
+%    output(:,12)=ic_topo;
+%    output(:,13)=snowman_table.topo_n;
+%    [Umech, ia_mech, ic_mech]=unique(snowman_table.mech);
+%    output(:,14)=ic_mech;
+%    output(:,15)=snowman_table.homseq;
+%end
 
 %choose samples to include if subsetting and only keep those in output
 

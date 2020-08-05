@@ -170,7 +170,8 @@ for c1=1:num_events,
     y_range=y_c1:y_c2;
     
     convhull_c=[convhull_c; x_c1 y_c1; x_c1 y_c2; x_c2 y_c1; x_c2 y_c2];
-       
+     
+   %commenting out just to see what happens 
     tile_mat(y_range,x_range)=true;
 %    [sum(ir_x) sum(ir_y) std_x std_y nnxy]
 end
