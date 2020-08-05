@@ -32,6 +32,9 @@ else
     end
 end
 
+%double background rate as a filter
+%pa = 2*pa; 
+
 % divide tiles with non-zero values from tiles with zero values
 pos_k = find(mfull>0 & pa>0);
 zero_k = find(mfull==0 & pa>0);
@@ -50,7 +53,7 @@ disp('Calculating P Value using Continous Binomial')
 %pval_nnz =  1 - cdf_num./cdf_denom;
 %we can use the beta cdf to represent the continous binomial cdf
 % 1 - cdfcbinom will give us 
-pval_nnz = 1 - betacdf(2*p_pos,mfull_pos, nume + 1 - mfull_pos,'upper');
+pval_nnz = 1 - betacdf(p_pos,mfull_pos, nume + 1 - mfull_pos,'upper');
 toc
 
 %pvalue of zero event tiles is 1

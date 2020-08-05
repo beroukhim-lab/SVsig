@@ -69,8 +69,7 @@ nume_3 = sum(mfull(annot_tiles(:,:,3)));
 %fincom
 
 %repeat ten times to check for stability
-%each row is a new iteration 
-
+%each row is a new iteration
 
 options = optimoptions('fmincon','DiffMinChange',1e-6,'TolFun',1e-1,'TolX',1e-6);
 
@@ -80,20 +79,17 @@ alphas(k1, :) = opt_alpha;
 BIC(k1, :) = f_bic;
 
 end 
-
-%create histograms of opt_alpha and BIC 
-
-
-%pattern search
-%use matlab version in applications for this
-%options = optimjoptions('patternsearch','MaxIterations',150,'MeshTolerance',1e-6);
-%[opt_alpha,f_bic] = patternsearch(@mix_optim_fun,alpha,[],[],[],[],zeros(num_param,1), ones(num_param,1),[],options);
-
  
  end 
+ 
+ 
+ 
+ 
+ 
+ 
 %set mix_model for the optimal alpha (this is the final mix model that will be returned by the function) 
-%alternative for testing alpha simulations
-%mix_model = zeros(size(model1));
+
+
 mix_model=zeros(size(mfull));
 
 
@@ -121,20 +117,63 @@ mix_model=mix_model/sum(mix_model(:));
 %        nnz_idc=mix_model>0;
          z_idc =  mfull == 0;     
 
+% change loglikelihood to compress long and ic
+    mfull_short = mfull(annot_tiles(:, :, 1)); 
+    mfull_long = sum(mfull(annot_tiles(:, :, 2)));
+    mfull_ic = sum(mfull(annot_tiles(:, :, 3)));
+    
+    mm_short = mix_model(annot_tiles(:, :, 1));
+    mm_long = sum(mix_model(annot_tiles(:, :, 2)));
+    mm_ic = sum(mix_model(annot_tiles(:, :, 3)));
+    
+    %compare mean number of rearrangements with expected value
+    m1_short = model1(annot_tiles(:, :, 1));
+    m1_long = model1(annot_tiles(:, :, 2));
+    m1_ic = model1(annot_tiles(:, :, 3));
+    
+    m2_short = model2(annot_tiles(:, :, 1));
+    m2_long = model2(annot_tiles(:, :, 2));
+    m2_ic = model2(annot_tiles(:, :, 3));
+    
+   % sum(abs(nume*m1_short - mfull_short))
+    %sum(abs(nume*m2_short - mfull_short))
+    
+     sum(nume*m1_long)- mfull_long
+    sum(nume*m2_long) - mfull_long
+    
+    sum(nume*m1_ic) - mfull_ic
+    sum(nume*m2_ic) - mfull_ic
+     
+    
+    nnzs_idc = mm_short > 0;
+    
+    shortLij = sum(mfull_short(nnzs_idc).*log(nume*mm_short(nnzs_idc))-nume*mm_short(nnzs_idc)-log_fac(mfull_short(nnzs_idc)+1)');
+    longLij = mfull_long.*log(nume*mm_long)-nume*mm_long-sum(log(1:mfull_long));
+   icLij = mfull_ic.*log(nume*mm_ic)-nume*mm_ic-sum(log(1:mfull_ic));
+   
+   %longLij = binopdf(mfull_long, nume, mm_long);
+   %icLij = binopdf(mfull_ic, nume, mm_ic);
+   
+    %try using binomial distribution instead of poisson approximation
+    
+         
 %mfull are the values of the "poisson" distributed xij, mix_model are the
 %pijs, nume is N 
-        sLij = sum(sum(mfull(nnz_idc).*log(nume*mix_model(nnz_idc))-nume*mix_model(nnz_idc)-log_fac(mfull(nnz_idc)+1)'));
-        zLij = sum(sum(-nume*mix_model(z_idc)));      
+        sLij = sum(sum(mfull(nnz_idc).*log(nume*mix_model(nnz_idc))-nume*mix_model(nnz_idc)-log_fac(mfull(nnz_idc)+1)')) ;
+        zLij = sum(sum(-nume*mix_model(z_idc)))  ;    
   
-%parameter penality
-dbj_param = 10;
- penalty1 = (1 - alpha(1))* dbj_param;
- penalty2 = (1 - alpha(2)) * dbj_param;
- penalty3 = (1- alpha(3)) * dbj_param;
+%parameter penality 
+ penalty1 = log(nume_1)*(1 - alpha(1))* 8;
+ penalty2 = log(nume_2)*(1 - alpha(2)) * 2;
+ %penalty3 = (1- alpha(3)) * 0;
  %3 added terms to BIC as penalty
         % the BIC value
-    % BIC = -2*(sLij + zLij)+log(nume)*num_param
-      BIC = -2*(sLij + zLij)+log(nume_1)*penalty1 + log(nume_2)*penalty2 + log(nume_3)*penalty3;
+    BIC = -2*(sLij + zLij)+log(nume)*num_param
+      %BIC = -2*(sLij + zLij)+penalty1 + penalty2 
+      
+      %BIC with compressed short and ic tiles
+      %BIC =  -2 *(shortLij + longLij +icLij) + log(nume)*num_param;
+     
       
     end
  

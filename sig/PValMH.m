@@ -52,6 +52,9 @@ if issymmetric(p)
     pa(eye(mat_size)~=0) = diag(pa)/2;
 end
 
+%multiply background rates by 2 for simulations with larger binss
+%pa = 2*pa;
+
     
 % divide tiles with positive values from zeros 
 high_k = find(mfull>=2 & pa>0);

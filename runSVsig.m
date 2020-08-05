@@ -30,8 +30,8 @@ sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/v16prepped_weighted_events_
        
     elseif simulations 
    
-  %sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/20191121simulatedalpha0.csv'
-  sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20191121simulatedalpha1.csv"
+  %sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/20200722simulatedalpha0.csv'
+  sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20200722simulatedalpha1.csv"
   %sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20191202_10nsimulatedalpha1.csv" 
   %sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20200422simtoyalpha1.csv"
     else 
@@ -57,8 +57,8 @@ else
        end
         
     elseif simulations 
-%sv_file = "/xchip/beroukhimlab/Kiran/complex/20191121simulatedalpha0.csv"
-sv_file = "/xchip/beroukhimlab/Kiran/complex/20191121simulatedalpha1.csv"
+%%sv_file = "/xchip/beroukhimlab/Kiran/complex/20200722simulatedalpha0.csv"
+sv_file = "/xchip/beroukhimlab/Kiran/complex/20200722simulatedalpha1.csv"
 %sv_file = "/xchip/beroukhimlab/Kiran/complex/20191202_10nsimulatedalpha1.csv"
 %sv_file = "/xchip/beroukhimlab/Kiran/complex/20200422simtoyalpha1.csv"
     else 
