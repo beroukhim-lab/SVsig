@@ -8,7 +8,7 @@ Description
 - Statistics and Machine Learning Toolbox
 - Optimization Toolbox
 
-**To Run _SVsig_ locally **
+**To Run _SVsig_ locally**
 
 *Simple Rearrangements Model:*
 - Open runSVsig.m
