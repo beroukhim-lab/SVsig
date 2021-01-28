@@ -31,6 +31,7 @@ for c1=CHR
         diag_bin = sum(bins(c2,2:3),2)/2;        
         diag_bin_size = (bins(c2,3)-bins(c2,2))/2;
         sij1dx_b=sij1dx<diag_bin_size;
+        %finds last sijdx bin less than half the size of the diag bin(??)
         last_diag = find(sij1dx_b,1,'last');
         len_factor(ct,:) = sij1dx_b(2:end);
         len_factor(ct,last_diag) = (diag_bin_size - sij1dx(last_diag))/(sij1dx(last_diag+1)-sij1dx(last_diag));

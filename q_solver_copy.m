@@ -12,8 +12,6 @@ end
 
 qe = R/2; % qe=rand(length(R),1);qe=qe/sum(qe);
 maxit=100;
-%this essentially tries to solve A*x=b where A is sij + eye(size(sij)), b is R
-%with default tolerance of 1e-6 (not specified here)
 [qsolve,flag1,rr1,iter1] = pcg(sij+eye(size(sij)),R, [],maxit);
 
 if flag1>0
@@ -31,7 +29,31 @@ if length(countnegs)>=0
 end
 
 p0 = bsxfun(@times,qe,sij);
-p=p0+p0';
+%p=p0+p0';
+
+
+sji=sij';
+
+maxit=100;
+[qsolve1,flag1,rr1,iter1] = pcg(sji+eye(size(sji)),R, [],maxit);
+
+if flag1>0
+    disp('ERROR in solver convergence');
+else
+    disp(['Converged on ' num2str(iter1) ' of ' num2str(maxit)]);
+end
+  
+qe1 = qsolve1;
+countnegs = find(qsolve1<0);  
+   
+if length(countnegs)>=0 
+    disp(['num of negatives in qsolve=' num2str(length(countnegs)) ' min qsolve ' num2str(min(qsolve1)) ]);
+    qe1 = projectOntoSimplex(qsolve1);
+end
+p1 = bsxfun(@times,qe1,sji);
+
+
+p=p0+p1;
 
 %fix ratio of ic probabilities: non-ic probabilities
 %to reflect ratio of ic events:non ic events

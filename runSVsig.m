@@ -31,15 +31,15 @@ sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/v16prepped_weighted_events_
     elseif simulations 
    
   %sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/20200722simulatedalpha0.csv'
-  sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20200722simulatedalpha1.csv"
+  %sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20200722simulatedalpha1.csv"
   %sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20191202_10nsimulatedalpha1.csv" 
-  %sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20200422simtoyalpha1.csv"
+  sv_file = "/Users/shu/sims/20210128_binsbydist5e5_noeventratios_sijdx100_a0.csv"
     else 
             
  %sv_file='/Volumes/xchip_beroukhimlab/ofer/matlab/merged_1.6.1.csv'
 % sv_file='/Volumes/xchip_beroukhimlab/Shu/prepped_intermediate_ccle_subset.csv'
  %sv_file='/Volumes/xchip_beroukhimlab/Shu/merged_1.6.1.csv'
- sv_file='/Volumes/xchip_beroukhimlab/Shu/prepped_ccle_sample3.csv'
+ sv_file='/Users/shu/SVsig_labcopy/merged_1.6.1.csv'
  %v_file='/Volumes/xchip_beroukhimlab/Shu/ccle_subset_prepped.csv'
  
  

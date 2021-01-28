@@ -37,7 +37,7 @@ weights = false;
 std_filter = 10;
 %@param simulations, run the model on simulated data (yes == 1, no == 0)
 global simulations
-simulations = false; 
+simulations = true; 
 %which chromosomes to consider in building the matrix
 global CHR
 CHR = 1:23;
@@ -45,7 +45,9 @@ CHR = 1:23;
 %%% set working directory%%%%%%
 if local
 %pwd = '/Volumes/xchip_beroukhimlab/Kiran/git/2dmodel/SVsig' 
-pwd = '/Volumes/xchip_beroukhimlab/Shu/git/SVsig'
+%pwd = '/Volumes/xchip_beroukhimlab/Shu/git/SVsig'
+pwd = '/Users/shu/SVsig_labcopy'
+
 else 
 %pwd = '/xchip/beroukhimlab/Kiran/git/2dmodel/SVsig'
 pwd = '/xchip_beroukhimlab/Shu/git/SVsig'
