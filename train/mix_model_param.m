@@ -13,7 +13,8 @@ global weights
 
 %logical: bins x bins x num_param
 %e.g. for short events param, denotes are the events in this tile short?
-annot_tiles=tiles_annot('length',events,bins,CHR);
+annot_tiles=tiles_annot_copy('length',events,bins,CHR);
+%annot_tiles=tiles_annot('length',events,bins,CHR);
 
 
 
@@ -42,7 +43,9 @@ end
  if complex && weights   
      save('debug_alpha')
      % for 1MB somatic distance cutoff in Xiatong's promiximity matrix
-     load('cbinom_alpha.mat');
+     %load('/Volumes/xchip_beroukhimlab/Kiran/git/2dmodel/SVsig/cbinom_alpha.mat');
+     load('/Users/shu/SVsig_labcopy/cbinom_alpha.mat');
+
      %for 50 kb somatic distance cutoff in X's prox matrix 
      %load('2020021050kbcbinom_alpha.mat')   
      disp('loading continous binomial alpha parameters')
@@ -55,16 +58,16 @@ for c1=1:max(mfull(:))
     log_fac(c1+1)=sum(log(1:c1));
 end
 
-BIC = zeros(10,1);
-alphas = zeros(10,3);
+BIC = zeros(2,1);
+alphas = zeros(2,4);
 
-for k1 = 1:10 
+for k1 = 1:2
 nume=sum(mfull(:));
 alpha=rand(num_param,1);
 nume_1 = sum(mfull(annot_tiles(:,:,1)));
 nume_2 = sum(mfull(annot_tiles(:,:,2)));
 nume_3 = sum(mfull(annot_tiles(:,:,3)));
-
+%nume_4 = sum(mfull(annot_tiles(:,:,4)));
 % optimize over model
 %fincom
 

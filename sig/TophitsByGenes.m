@@ -55,21 +55,28 @@ while sum(counted_bins)>0,
     
     gene_i={}; gene_j={};
     gene_i_pos=[]; gene_j_pos=[];
-    range(Tc,1:3)=[hitstable(clines(1),8) min(hitstable(clines,9)) max(hitstable(clines,9))];          
-    [gene_i,gene_i_pos]=get_gene_list(range(Tc,1:3),refgene_tble,refgene,pos_pad,pos_pad);
-    [gene_locus, gene_i_pos0]=gene_locus_search(range(Tc,1:3),pos_pad,pos_pad);
-    if ~isempty(gene_locus),
-        gene_i=gene_locus;
-        gene_i_pos=gene_i_pos0(2:3);
-    end
-        
-    range(Tc,4:6)=[hitstable(clines(1),10) min(hitstable(clines,11)) max(hitstable(clines,11))];  
-    [gene_j,gene_j_pos]=get_gene_list(range(Tc,4:6),refgene_tble,refgene,pos_pad,pos_pad);
-    [gene_locus, gene_j_pos0]=gene_locus_search(range(Tc,4:6),pos_pad,pos_pad);
-    if ~isempty(gene_locus),
-        gene_j=gene_locus;
-        gene_j_pos=gene_j_pos0(2:3);
-    end
+    %if numel(clines)>0
+         range(Tc,1:3)=[hitstable(clines(1),8) min(hitstable(clines,9)) max(hitstable(clines,9))];    
+        [gene_i,gene_i_pos]=get_gene_list(range(Tc,1:3),refgene_tble,refgene,pos_pad,pos_pad);
+        [gene_locus, gene_i_pos0]=gene_locus_search(range(Tc,1:3),pos_pad,pos_pad);
+        if ~isempty(gene_locus),
+            gene_i=gene_locus;
+            gene_i_pos=gene_i_pos0(2:3);
+        end
+    %end
+    
+
+    
+    %if numel(clines)>0
+           range(Tc,4:6)=[hitstable(clines(1),10) min(hitstable(clines,11)) max(hitstable(clines,11))];  
+
+        [gene_j,gene_j_pos]=get_gene_list(range(Tc,4:6),refgene_tble,refgene,pos_pad,pos_pad);
+        [gene_locus, gene_j_pos0]=gene_locus_search(range(Tc,4:6),pos_pad,pos_pad);
+        if ~isempty(gene_locus),
+            gene_j=gene_locus;
+            gene_j_pos=gene_j_pos0(2:3);
+        end
+    %end
     
     % find other bins included in the above gene list
     if ~isempty(gene_i_pos) & ~isempty(gene_j_pos)
@@ -193,7 +200,10 @@ while sum(counted_bins)>0,
     TbyGene(Tc).mp = sum(((hitstable(clines,14)-1)*2+hitstable(clines,15))==2);
     TbyGene(Tc).pm = sum(((hitstable(clines,14)-1)*2+hitstable(clines,15))==3);
     TbyGene(Tc).mm = sum(((hitstable(clines,14)-1)*2+hitstable(clines,15))==4);
-    Tc=Tc+1;
+    
+    %if (Tc< length(range))
+        Tc=Tc+1;
+    %end
 
 end
 

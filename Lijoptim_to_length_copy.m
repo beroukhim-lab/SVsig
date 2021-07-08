@@ -1,4 +1,4 @@
-function [sij1dy,opt1dy,fval,sij,intra_chr] = Lijoptim_to_length(events,chsize,bins,CHR,R0,mfull,sij1dx,len_factor)
+function [sij1dy,opt1dy,fval,sij,intra_chr] = Lijoptim_to_length_copy(events,chsize,bins,CHR,R0,mfull,sij1dx,len_factor)
 % finds maximum likelehood 1D distribution for mult-model 
 
 %len_factor = model_length_dist( events,bins, CHR, sij1dx);
@@ -32,8 +32,24 @@ inter_lij=inter_chr/inter_rij;
 % calculate the 1D Sij distribution
 %sidjx indicates bins that are chosen for empirical distribution
 sij1dy = EventLengthDist_G(sij1dx,events,0);
-sij1dy = sum(sij1dy,2)/length(sij1dy(1,:));     %averaging across types of events (4)
-sij1dy = sij1dy/sum(sij1dy);                    %normalizing to sum to 1
+%sij1dy = sum(sij1dy,2)/length(sij1dy(1,:));     %averaging across types of events (4)
+%sij1dy = sij1dy/sum(sij1dy);                    %normalizing to sum to 1
+
+
+%fixing sij1dy average to account for event type weight
+nume=length(events)
+annot_frac(1) = sum(events(:,3)==1&events(:,6)==1)/nume;
+annot_frac(2) = sum(events(:,3)==1&events(:,6)==2)/nume;
+annot_frac(3) = sum(events(:,3)==2&events(:,6)==1)/nume;
+annot_frac(4) = sum(events(:,3)==2&events(:,6)==2)/nume;
+for ca=1:4
+    sij1dy(ca,:) = sij1dy(ca,:) * annot_frac(ca);
+end
+sij1dy = sum(sij1dy,2);     % summing across types of events (4)
+sij1dy = sij1dy/sum(sij1dy);           %normalizing to sum to 1
+
+
+
 log_sij1dy=log10(sij1dy(1:end-1));
 sij1dx=sij1dx';
 d_sij1dx=diff(sij1dx);

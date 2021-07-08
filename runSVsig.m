@@ -22,9 +22,12 @@ function[hits_table] = runSVsig(local, model_exist, len_filter, bks_cluster, FDR
 if local 
        
     if complex 
- sv_file ='/Volumes/xchip_beroukhimlab/Kiran/adjancencies/20190502prepped.csv' 
+ %sv_file ='/Volumes/xchip_beroukhimlab/Kiran/adjancencies/20190502prepped.csv' 
         if weights
-sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/v16prepped_weighted_events_20190724.csv'
+%use this first one
+%sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/v16prepped_weighted_events_20190724.csv'
+ sv_file='/Users/shu/SVsig_labcopy/complex.csv'
+
 %sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/v16prepped_weighted_events_20200206.csv'
         end 
        
@@ -33,14 +36,22 @@ sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/v16prepped_weighted_events_
   %sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/20200722simulatedalpha0.csv'
   %sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20200722simulatedalpha1.csv"
   %sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20191202_10nsimulatedalpha1.csv" 
-  sv_file = "/Users/shu/sims/20210128_binsbydist5e5_noeventratios_sijdx100_a0.csv"
+  %sv_file = "/Users/shu/sims/20210204_sij1dx10_ratioslij_a1.csv"
+  sv_file = "/Users/shu/2d_results/2d_results_final/20210527_mixmodel_a0.csv"
+  
     else 
             
  %sv_file='/Volumes/xchip_beroukhimlab/ofer/matlab/merged_1.6.1.csv'
 % sv_file='/Volumes/xchip_beroukhimlab/Shu/prepped_intermediate_ccle_subset.csv'
  %sv_file='/Volumes/xchip_beroukhimlab/Shu/merged_1.6.1.csv'
+ 
  sv_file='/Users/shu/SVsig_labcopy/merged_1.6.1.csv'
- %v_file='/Volumes/xchip_beroukhimlab/Shu/ccle_subset_prepped.csv'
+ %sv_file='/Users/shu/SVsig_labcopy/merged_chromothripsis.csv'
+ %sv_file='/Users/shu/SVsig_labcopy/mmbir_events.csv'
+ %sv_file='/Users/shu/SVsig_labcopy/hom_2_10.csv'
+ %sv_file='/Users/shu/SVsig_labcopy/complex.csv'
+
+
  
  
     end
@@ -81,17 +92,30 @@ if model_exist
     %override bks_cluster assignment in background model loading
     %bks_cluster = 1;
     if complex 
-       load ('backgroundmodel_adjacencies_weighted_20190524');
+       %load ('backgroundmodel_adjacencies_weighted_20190524');
+       load('20210512_complexbackground_5e5bins');
     else 
         %something is not right with this background model?
-        load 'ICGC_2D_SV_model20190705_88hits.mat'
+        %load ('20210421_5e6model_testpval.mat')
+        %load 'ICGC_2D_SV_model20190705_88hits.mat'
+        %load ('20210423_background_100bkpts.mat')
+        %load ('20210423_background_5e5bins.mat')
+        %load('20210525_simple.mat')
+        %load('20210613_mixmodel_a050.mat')
+        load('20210623_mixmodel_a0.mat')
     end 
-  else
+else
+      
+    %load in 
+    pcawg_background=load('20210613_mixmodel_pcawg.mat', 'bins', 'p', 'p_mult');
+   
 
     mixmodel;
+    %load('/Users/shu/2d_results/20210613_mixmodel_a050.mat')
    %save('ICGC_2D_SV_model20190705_88hits.mat')
     %save('backgroundmodel_adjacencies_weighted_20190524');
    %save('ICGC_2D_SV_model20190610.mat')
+   %save('20210423_background_100bkpts.mat')
 end
 
 
@@ -217,9 +241,13 @@ end
 %in matlab for real numbers mfull' is the transpose of mfull
 %use mfull00 over mfull' + mfull because the events in mfull00 are filtered
 %more stringently`ewq
+bks_cluster=0;
 if ~bks_cluster
    if weights 
-       [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom(mfull00, mix_model, [], []);
+       
+       %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom(mfull00, mix_model, [], []);
+       [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom_avgdist(mfull00, mix_model, [], [], bins, events00);
+
     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull+mfull', mix_model, [], [],1, FDR_THRESHOLD);
    else 
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull00, mix_model, [], [],1);
@@ -230,6 +258,8 @@ else
     %PValMH adjusts for clustered fragile sites within bins whereas PVal does not
     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull+mfull', mix_model, bins, events, sij1dx, chsize, CHR, 1, 0.1, 0);
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
+    %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
+
 end
 
 

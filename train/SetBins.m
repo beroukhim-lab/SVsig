@@ -1,6 +1,7 @@
 % generate a table of bins with chr number, start and end position and
 % number of events
 
+
 function [bins, numbins] = SetBins(events,num_breakpoints_per_bin,chsize,CHR, min_bin_dist)
 
 disp('setting bins boundaries...');

@@ -14,13 +14,25 @@ qe = R/2; % qe=rand(length(R),1);qe=qe/sum(qe);
 maxit=100;
 %this essentially tries to solve A*x=b where A is sij + eye(size(sij)), b is R
 %with default tolerance of 1e-6 (not specified here)
+%UNCOMMENT 1 LINE BELOW
 [qsolve,flag1,rr1,iter1] = pcg(sij+eye(size(sij)),R, [],maxit);
 
-if flag1>0
-    disp('ERROR in solver convergence');
-else
+%A=zeros(size(sij));
+%A(:,length(sij))=1;
+%[qsolve,flag1,rr1,iter1] = pcg(sij+A,R, [],maxit);
+
+% [n, m] = size(sij);
+% A_new = [sij -ones(n, 1)];
+% [qsolve1] = linspace(A_new, R, [], maxit);
+% qsolve = qsolve1(1:m);
+
+
+%uncomment next 5 lines
+ if flag1>0
+     disp('ERROR in solver convergence');
+ else
     disp(['Converged on ' num2str(iter1) ' of ' num2str(maxit)]);
-end
+ end
   
 qe = qsolve;
 countnegs = find(qsolve<0);  

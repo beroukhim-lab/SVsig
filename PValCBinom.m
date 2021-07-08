@@ -6,6 +6,7 @@
 function [qFDR, pa, pval_tophits,mfull] = PValCBinom(mfull, p, qe, sij)
 
 global FDR_THRESHOLD
+FDR_THRESHOLD = 0.25;
 
 % general variables
 mat_size = size(mfull);

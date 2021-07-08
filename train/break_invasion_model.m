@@ -45,12 +45,15 @@ Weights_column = 11;
 % remove bins with low density of events (need to set up threshold manually) 
 [bins0, events0, numbins] = remove_low_density_bins(bins0,events0);
 
+%bins0= pcawg_background.bins;
+%numbins=5599;
+
 [mfull0,bins_event_tble0] = BuildMatrix(events0,bins0,num_annot);
 
-[bins_event_tble, bins, mfull, events00, removed_events] = RemoveSameSampleEvents(bins_event_tble0, bins0, mfull0, events0,Patient_column,1);
+%[bins_event_tble, bins, mfull, events00, removed_events] = RemoveSameSampleEvents(bins_event_tble0, bins0, mfull0, events0,Patient_column,1);
 
 %remove events in the same nucleotide (artifacts)
-[bins_event_tble, bins, mfull, events00, removed_events_std] = RemoveZeroVarSampleEvents(bins_event_tble, bins, mfull, events00);
+%[bins_event_tble, bins, mfull, events00, removed_events_std] = RemoveZeroVarSampleEvents(bins_event_tble, bins, mfull, events00);
 
 %save bins to compare to TADs size distributions
 %dlmwrite(strcat('/Volumes/xchip_beroukhimlab/Kiran/complex/bins', num2str(num_breakpoints_per_bin), '.txt'), bins, 'delimiter','\t','newline','pc','precision',13);

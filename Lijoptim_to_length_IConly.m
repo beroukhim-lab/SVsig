@@ -72,7 +72,7 @@ end
 
 %intra_norm=(1-inter_chr)/sum(sum(Rij.*sij)); % here sij is still zero for all inter-chromosomal events
 %sij=intra_norm*sij.*(b_mat==1)+inter_lij*(b_mat==0);
-sij = marginal_normalization( sij, R );
+%sij = marginal_normalization( sij, R );
 
 sij(find(eye(size(sij)))) = 0;
 

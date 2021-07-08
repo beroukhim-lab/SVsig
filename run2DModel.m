@@ -9,11 +9,11 @@ len_filter=1e6;
 %0 => PVal, 1=> PValMH. PValMH = 1 to replicate ofer's final results for
 %the ICGC paper
 %get very different results for when PVal = 0
- bks_cluster=1;
- %param FDR_threshold sets the q value cut off
-  global FDR_THRESHOLD
- FDR_THRESHOLD = 0.1;
- %set random seed for reproducibility%
+bks_cluster=1;
+%param FDR_threshold sets the q value cut off
+global FDR_THRESHOLD
+FDR_THRESHOLD = 0.1;
+%set random seed for reproducibility%
 %rng(3014)
 %@param output_file: sets the name for the output file containing the significant 2D hits %
 %output_file = 'hitsalljunctions.txt'
@@ -37,10 +37,13 @@ weights = false;
 std_filter = 10;
 %@param simulations, run the model on simulated data (yes == 1, no == 0)
 global simulations
-simulations = true; 
+simulations = false; 
 %which chromosomes to consider in building the matrix
 global CHR
 CHR = 1:23;
+global genome_build
+genome_build='hg_19';
+%hg_19 or hg_38
 
 %%% set working directory%%%%%%
 if local
@@ -69,20 +72,14 @@ addpath(genpath(pwd));
 %num_breakpoints_per_bin = nbb(c2);
 %disp(num_breakpoints_per_bin)
 %hits_table = runSVsig(local, model_exist, lf(c1), bks_cluster, FDR_THRESHOLD, complex, num_breakpoints_per_bin, weights, [], std_filter, simulations);
-%num_hits(c1, c2) = length(unique(hits_table.cluster_num));
 %writetable(hits_table, strcat('/Volumes/xchip_beroukhimlab/Kiran/complex/20191113simulationsbin', num2str(num_breakpoints_per_bin),'filter', num2str(lf(c1)), '.txt'),'delimiter','\t')
 
- 
-%end 
-%end 
+
 
 %run model
-
-%note to self: need to check complex, weights, simulations; make sure path
-%to appropriate file is correct in "runSVsig.m"
 hits_table = runSVsig(local, model_exist, len_filter, bks_cluster, FDR_THRESHOLD, complex, num_breakpoints_per_bin, weights, [], std_filter, simulations);
 %writetable(hits_table, '/xchip/beroukhimlab/Kiran/complex/20200212regularbackgroundrate5e5lengthfilter','delimiter','\t')
-writetable(hits_table, '/Volumes/xchip_beroukhimlab/Shu/ccle2_sample_practice','delimiter','\t')
+%writetable(hits_table, '/Users/shu/2d_results/20210423_100bkpts_avgdistpval','delimiter','\t')
+%num_hits(c1, c2) = length(unique(hits_table.cluster_num));
 
-%note to self: commented out tile_density line 174 to see what happens 
 

@@ -32,6 +32,14 @@ inter_lij=inter_chr/inter_rij;
 % calculate the 1D Sij distribution
 %sidjx indicates bins that are chosen for empirical distribution
 sij1dy = EventLengthDist_G(sij1dx,events,0);
+
+%to test changes in 1/L distribution
+n=1;
+sij1dy=(sij1dy).^n;
+
+%to account for differing sij1dy values
+%sij1dy=(100/10).*sij1dy;
+
 %sij1dy = sum(sij1dy,2)/length(sij1dy(1,:));     %averaging across types of events (4)
 %sij1dy = sij1dy/sum(sij1dy);                    %normalizing to sum to 1
 
@@ -74,35 +82,25 @@ for c1=CHR,
         %seems to be essentially the same as for sijs, written differently
         sij(c2,c2+1:lastbin(c1)) = (interp1(sij1dx,sij1dy,bins(c2+1:lastbin(c1),2)-diag_bin(c2),'pchip')+interp1(sij1dx,sij1dy,bins(c2+1:lastbin(c1),3)-diag_bin(c2),'pchip'))'/2;
         last_diag(c2) = find(sij1dx<diag_bin_size(c2),1,'last');
-        sij(c2,c2) = ( sij1dy(1:last_diag(c2)-1)'*d_sij1dx(1:last_diag(c2)-1) + (diag_bin_size(c2) - sij1dx(last_diag(c2))-1) * interp1(sij1dx,sij1dy,diag_bin_size(c2),'pchip'))/(diag_bin_size(c2)-sij1dx(1));    
+        sij(c2,c2) = ( sij1dy(1:last_diag(c2)-1)'*d_sij1dx(1:last_diag(c2)-1) + (diag_bin_size(c2) - sij1dx(last_diag(c2))-1) * interp1(sij1dx,sij1dy,diag_bin_size(c2),'pchip'))/(diag_bin_size(c2)-sij1dx(1));  
+        %sij(c2,c2) = ( sij1dy(1:last_diag(c2)-1)'*d_sij1dx(1:last_diag(c2)-1) + (diag_bin_size(c2) - sij1dx(last_diag(c2))-1) * interp1(sij1dx,sij1dy,diag_bin_size(c2),'pchip'))/(diag_bin_size(c2));  
+        sij(c2, c2) = 1;
+
     end
     sij(chr_intra,chr_intra) = sij(chr_intra,chr_intra) + sij(chr_intra,chr_intra)';
 end
 
+
 intra_norm=(1-inter_chr)/sum(sum(Rij.*sij)); % here sij is still zero for all inter-chromosomal events
 sij=intra_norm*sij.*(b_mat==1)+inter_lij*(b_mat==0);
+
+%add here to normalize lij by event ratios before marg norm lol this is so janky
+[sij]=renormalize_tiles(mfull, sij, events, bins, CHR);
+
 sij = marginal_normalization( sij, R );
 
-%comment out after here to do without normalization
-%mfull=triu(mfull);
-%mfull(eye(mat_size)==1)=diag(mfull)/2;
-
-
-%len1d=length(sij1dy)-1;
-%ct=0;
-
-%sij1dy_init=log10(sij1dy(1:end-1));
-
-
-%sij = sij.*(sij>0);
-
-
-%sij1dy_init=-10*rand(len1d,1);
-
-
-
-
 end
+
 
 
 
