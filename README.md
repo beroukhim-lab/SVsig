@@ -58,4 +58,13 @@ There are additional parameters that can be set in Run2DModel.m
 
 
 ### Tutorial
-make a tutorial later 
+make a tutorial later
+
+
+
+## License
+Author: Shu Zhang, shu@broadinstitute.org, shu.zhang@gladstone.ucsf.edu
+Contact: Rameen Beroukhim, rameen_beroukhim@dfci.harvard.edu
+License: GNU AGPL3, Copyright (C) 2023 Dana-Farber Cancer Institute
+
+Please cite: 
