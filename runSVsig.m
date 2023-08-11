@@ -58,46 +58,7 @@ if local
   %sv_file='/Users/shu/2d_results/20220505_newsim_eveninter.csv' %this is
   %the one that gives no results
   
-  %sv_file='/Users/shu/2d_results/20220517_newsim_eveninter_1e6bins_noshortevents_fixed_r2.csv'
-  %sv_file='/Users/shu/2d_results/sims/20220517_newsim_eveninter_1e6bins_noshortevents_fixed_r5.csv'
-  
-  %this one has 4 hits usually 
-  %sv_file='/Users/shu/2d_results/sims/20220526_newsim_eveninter_1e6bins_noshortevents_3030bins_r7.csv'
-  
-  %the fixed ones, i think 
- % sv_file='/Users/shu/2d_results/sims/20220609_newsim_eveninter_1e6bins_n3_noshortevents_3030bins_r4.csv'
-  
-  %sv_file='/Users/shu/2d_results/20220517_newsim_eveninter_1e6bins_allevents.csv'
-  
-  %sv_file='/Users/shu/2d_results/sims/20220623_diagsim_withmarg_tilewise_n3_3030bins_Rnormalized_i1.csv'
-  
-  %idk this one does not work
-  %sv_file='/Users/shu/2d_results/sims/20220628_diagsim_withmarg_tilewise_n1_3030bins_Rnormalized_test_i3.csv'
-  
- % sv_file='/Users/shu/2d_results/sims/20220706_diagsim_withmarg_tilewise_n1_3030bins_Rnormalized_i3.csv'
-  
- %USING 1E3 
- %sv_file='/Users/shu/2d_results/sims/20220706_diagsim_withmarg_tilewise_n1_3030bins_Rnormalized_1e3events_i2.csv'
- %sv_file='/Users/shu/2d_results/sims/20220719_diagsim_withmarg_tilewise_n3_3030bins_Rsum_1e3events_i10.csv'
- 
- 
-  %sv_file='/Volumes/xchip_beroukhimlab/Shu/2d_sim/20220324_a1_lengthdist_100bins.csv'
-  %sv_file='/Users/shu/2d_results/20220412_pdiff_lengthdist_100bins.csv'
-  
-  %sv_file='/Users/shu/2d_results/20220225_a1_sim.csv'
- %sv_file='/Users/shu/DLBCL/highconf_complex_svaba_1.csv'
- %sv_file='/Users/shu/2d_results/20220103_a0_logtransform_sijdx1000.csv'
- %sv_file='/Users/shu/2d_results/20211021_500kb_a0_lengthdist.csv'
- 
- %sv_file='/Users/shu/2d_results/20211201_a0_logtransform_sijdx1000.csv'
- %sv_file='/Users/shu/DLBCL/20210720_DLBCL_allsvaba.csv'
- %sv_file='/Users/shu/SVsig_labcopy/merged_chromothripsis.csv'
- %sv_file='/Users/shu/SVsig_labcopy/mmbir_events.csv'
- %sv_file='/Users/shu/SVsig_labcopy/hom_2_10.csv'
- %sv_file='/Users/shu/2d_results/20210930_500kb_a0.csv'
 
-
- 
  
     end
     
@@ -153,157 +114,15 @@ if model_exist
     end 
 else
       
-    %load in 
-    %pcawg_background=load('20210613_mixmodel_pcawg.mat', 'bins', 'p', 'p_mult');
-   
 
     mixmodel;
   %load('/Users/shu/2d_results/20211203_pcawg_background_500kb.mat')
-   %sv_file='/Users/shu/2d_results/20211201_a0_logtransform_sijdx1000.csv'
-  %[events00, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2] = GenerateSVarray(sv_file,EventLengthThreshold,CHR,Tumor_column,Event_column,Sample_column,Patient_column, Weights_column);
-  %[mfull,bins_event_tble] = BuildMatrix(events00,bins,num_annot);
-  
-  %load('/Users/shu/2d_results/20211112_a0_loglengthdist_model.mat')
-   %load('/Users/shu/2d_results/20210722_mixmodel_pcawg.mat')
-   %load('/Users/shu/2d_results/20210909_mixmodel_100N_aftermixmodelparam.mat')
-    %load('20210613_mixmodel_a050.mat')
-    %load('20210623_mixmodel_a0.mat')
-    %load('20210917_mixmodel_a1.mat')
-    %load('/Users/shu/2d_results/20210924_pcawg_afterbi.mat')
+ 
 
    %save('ICGC_2D_SV_model20190705_88hits.mat')
-    %save('backgroundmodel_adjacencies_weighted_20190524');
-   %save('ICGC_2D_SV_model20190610.mat')
-   %save('20210423_background_100bkpts.mat')
-   %load('20210930_500kb_a0_newfragilesite1.mat')
-   %fragile_track=importdata([WorkDir '/tracks/fragile_genes_smith.hg19fp.bed.txt']);
+ 
 end
 
-
-
-% EventLengthThreshold=1e2;
-%  
-% 
-% % events array
-% %events 0 seems to be an entirely numeric representation of SV table
-% events0=zeros(height(SVTable),12);
-% 
-% if sum(strcmp(SVTable.Properties.VariableNames, 'histology_abbreviation'))>0
-%     SVTable.Properties.VariableNames{'histology_abbreviation'} = 'subtype';
-% end
-% 
-% if isa(SVTable.seqnames,'numeric')    
-%     events0(:,1)=SVTable.seqnames;
-% else
-%     events0(:,1)=chr_str2num(SVTable.seqnames)';
-% end
-% 
-% if isa(SVTable.seqnames,'numeric')    
-%     events0(:,1)=SVTable.seqnames;
-% else
-%     events0(:,1)=chr_str2num(SVTable.seqnames)';
-% end
-% 
-% events0(:,2)=SVTable.start;
-% [Ustrand1, ia_strand1, ic_strand1]=unique(SVTable.strand);
-% events0(:,3)=ic_strand1;
-% 
-% 
-% events0(:,5)=SVTable.altpos;
-% [Ustrand2, ia_strand2, ic_strand2]=unique(SVTable.altstrand);
-% events0(:,6)=ic_strand2;
-% 
-% %where is subtype?
-% %I'm assuming subtype refers to cancer subtype and is represented by the
-% %variable dcc_project_code 
-% %[UTumor, ia_code, ic_code]=unique(SVTable.subtype);
-% %[UTumor, ia_code, ic_code]=unique(SVTable.dcc_project_code)
-% %events0(:,7)=ic_code;
-% 
-% [Uevent, ia_event, ic_event]=unique(SVTable.sv_id);
-% events0(:,8)=ic_event;
-% 
-% [Usample, ia_sample, ic_sample]=unique(SVTable.sid);
-% events0(:,9)=ic_sample;
-% 
-% if sum(strcmp('donor_unique_id',SVTable.Properties.VariableNames))>0
-%     [Upatient, ia_patient, ic_patient]=unique(SVTable.donor_unique_id);
-% else
-%     [Upatient, ia_patient, ic_patient]=unique(SVTable.sid);
-% end
-% events0(:,10)=ic_patient;
-% 
-% %events0(:,11)=SVTable.HOMLEN;
-% %events0(:,12)=SVTable.INSLEN;
-% 
-% disp(strcat('total events from vcfs: ',num2str(length(events0))));
-% % filter mask track
-% [events0,masked_events] = mask_events( events0,mask_track );
-% disp(strcat('total events after masked regions: ',num2str(length(events0))));
-% 
-% 
-%  %events matrix
-% %bin the events? %what is happening in this for loop below?
-% 
-% 
-% %%%%%%%%%%%start here if model exists%%%%%%%%%%%%%%%%%%%%%%
-% %this matrix is not by rearrangment type (inversion, deletion, duplication)
-% %bin the events matrix 
-% %using mfull is okay but mfull00 (in break_invasion_model) has more stringent requirements for filtering events 
-% mfull0=sparse(length(bins),length(bins));
-% bins_event_tble0=zeros(length(events0),3);
-% for c1 = 1:length(events0)
-%     bini0=find(bins(:,1)==events0(c1,1) & bins(:,2)<=events0(c1,2) & bins(:,3)>=events0(c1,2));
-%     binj0=find(bins(:,1)==events0(c1,4) & bins(:,2)<=events0(c1,5) & bins(:,3)>=events0(c1,5));
-%     if ~isempty(bini0) && ~isempty(binj0)
-%         bins_event_tble0(c1,1) = bini0;
-%         bins_event_tble0(c1,2) = binj0;
-%         bini = min(bins_event_tble0(c1,1),bins_event_tble0(c1,2));
-%         binj = max(bins_event_tble0(c1,1),bins_event_tble0(c1,2));
-%         bins_event_tble0(c1,3) = sub2ind([length(bins) length(bins)],bini,binj); % note: assign values only to upper tria of the matrix
-%         mfull0(bini,binj) = mfull0(bini,binj) + 1;
-%     end
-% end
-% 
-% % remove unassigned events
-% unassigned_events=bins_event_tble0(:,1)==0;
-% events0(unassigned_events,:)=[];
-% bins_event_tble0(unassigned_events,:)=[];
-% disp(strcat('total events after removing unassigned events: ',num2str(length(events0))));
-% 
-% % remove same bin same sample events
-% T_bin_sample=table();
-% T_bin_sample.bin=bins_event_tble0(:,3);
-% T_bin_sample.sample=events0(:,9);
-% [u_t,ia_t,ic_t]=unique(T_bin_sample);
-% events=events0(ia_t,:);
-% bins_event_tble=bins_event_tble0(ia_t,:);
-% disp(strcat('total events after removing same sample same bin events: ',num2str(length(events))));
-% 
-% % remove below length threshold events
-% below_length_th=(abs(events(:,5)-events(:,2))<EventLengthThreshold)&(events(:,1)==events(:,4));
-% events(below_length_th,:)=[];
-% bins_event_tble(below_length_th,:)=[];
-% disp(strcat('total events after removing below length threshold: ',num2str(length(events))));
-% 
-% 
-% 
-% % update mfull by rebuilding it using events, which is a filtered version
-% %of events0 (used to be original mfull0)
-% mfull=sparse(length(bins),length(bins));
-% for c1 = 1:length(events)
-%     bini0=find(bins(:,1)==events(c1,1) & bins(:,2)<=events(c1,2) & bins(:,3)>=events(c1,2));
-%     binj0=find(bins(:,1)==events(c1,4) & bins(:,2)<=events(c1,5) & bins(:,3)>=events(c1,5));
-%     if ~isempty(bini0) && ~isempty(binj0)
-%         mfull(bini0,binj0) = mfull(bini0,binj0) + 1;
-%     end  
-% end
-
-%in matlab for real numbers mfull' is the transpose of mfull
-%use mfull00 over mfull' + mfull because the events in mfull00 are filtered
-%more stringently`ewq
-
-%load('20220928_complex_postmixmodel')
 
 bks_cluster=0;
 if ~bks_cluster
@@ -356,23 +175,6 @@ end
 TbyGene_mix_lf = TbyGene_mix(hit_2_include);
         
 
-%for export into tile merging, etc. in R 
-%dlmwrite('/Volumes/xchip_beroukhimlab/Kiran/adjancencies/20190529wbins.txt', bins, 'delimiter','\t','newline','pc','precision',13);
-%dlmwrite('/Volumes/xchip_beroukhimlab/Kiran/adjancencies/20190529whitstable.txt', hitstable_mix, 'delimiter','\t','newline','pc','precision',13);
-
-% %written by Kiran 3/25/19
-% %create a list of the unique significant tiles
-% sig_tiles = table();
-% sig_tiles.chri = bins(hitstable_mix_lookup(:,1), 1); 
-% sig_tiles.starti = bins(hitstable_mix_lookup(:,1), 2);
-% sig_tiles.endi = bins(hitstable_mix_lookup(:,1), 3);
-% sig_tiles.chrj = bins(hitstable_mix_lookup(:,2), 1);
-% sig_tiles.startj = bins(hitstable_mix_lookup(:,2), 2);
-% sig_tiles.endj = bins(hitstable_mix_lookup(:,2), 3);
-% %sig_tile.qval = hitstable_mix(hitstable_mix_lookup(,:1:2),5)
-
-%sig_tiles.numevents = for each row count the number of events that are BOTH in bin i and bin j 
-%writetable(unique(sig_tiles), '/xchip/beroukhimlab/Kiran/adjancencies/sigbinstest20190325', 'delimiter','\t')
 
 annotated_table = annotate_hits_list( TbyGene_mix_lf,SVTable,bins,hitstable_mix_lookup,pa_mix );
 hits_table=table();
@@ -402,16 +204,6 @@ hits_table.prob = annotated_table.p_mix;
 %end 
     
 
-%written by Kiran 3/8/19
-%remove entries from hits_table that have only supported by 1 sample
-% v = accumarray(hits_table.cluster_num, 1);                  % Tally Occurrences Of Rows
-% u_cluster_id =  unique(hits_table.cluster_num);  %unique cluster_ids
-% indices = u_cluster_id ( v > 1); %Which clusters have greater than 1 occurence
-% hits_table = hits_table(ismember(hits_table.cluster_num, indices),:); %kwwp hits have greater than 1 occurence
-% disp(strcat(num2str(length(v) - length(v(v>1))), '   hits are supported by only one sample'));
-
-%remove samples that have only 1 unique sample id (i.e. those that are
-%supported by only 1 sample)
 disp(strcat('the number of hits pre-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
 h1=1;
 clusters_to_keep = [];

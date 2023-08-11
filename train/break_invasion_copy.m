@@ -64,9 +64,7 @@ Weights_column = 11;
 %bins0=modelp2.bins;
 %numbins=length(bins0);
 
-%modelp2=load('/Users/shu/2d_results/20220408_noshortevents_1e6bins.mat');
-%bins0=modelp2.bins;
-%numbins=length(bins0);
+
 
 
 %keeping bins with low density but without the eventsi n those bins
@@ -90,13 +88,7 @@ mfull=mfull0;
 
 R = MarginalProbability(bins_event_tble,events00,numbins); 
 
-% global length_factor
-% disp(num2str(length_factor))
-% disp(R(1:5))
-% %%%code to test robustness of length distribution
-% R=R.^(length_factor);
-% R=2*R/sum(R);
-% disp(R(1:5))
+
 % 
 sij1dx = length_dist_1d_bins(events00,chsize,10);
 sij1dx=unique(sij1dx);
@@ -125,8 +117,6 @@ if no_annot
     
 else
     [sij,sij1dy] = ConditionalProbability_copy(events00,chsize,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx);  % 3D matrix with conditional probability per annotation
-    %[sij,sij1dy] = ConditionalProbability_formula(events00,chsize,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx);  % 3D matrix with conditional probability per annotation
-    %[sij,sij1dy] = ConditionalProbability_mediandiag_interp(events00,chsize,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx, bins_event_tble);  % 3D matrix with conditional probability per annotation
 
     
     mfull00=mfull{1}+mfull{2}+mfull{3}+mfull{4};

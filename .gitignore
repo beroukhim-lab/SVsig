@@ -3,6 +3,8 @@
 *.xlsx
 
 csv/
+working_files/
+
 
 /randomgraphs.m
 /ConditionalProbability_copy1.m
