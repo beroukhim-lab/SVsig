@@ -13,9 +13,9 @@ This version has primarily been tested using `MATLAB_R2020a`.
 
 
 ### Preparing files
-SVSig takes in an input .csv file with 15 columns. An example is in this repo, merged_1.6.1.csv. YYour file must match the column names exactly. 
+SVSig takes in an input .csv file with 15 columns. An example is in this repo under data/merged_1.6.1.csv. Your file must match the column names exactly. 
 - **seqnames, start, strand, altchr, altpos, altstrand**: genomic coordinates of both rearrangement breakpoints.
-    - Note that chromosome coordinates are integers only. ChrX and ChrY are changed to 23 and 24, respectively. 
+    - Note that chromosome coordinates are integers only. chrX and chrY are changed to 23 and 24, respectively. 
 - **dcc_project_code**: histology or tissue type information. 
 - **sv_id**: ID for individual rearrangement
 - **sid**: Patient ID for the rearrangement
@@ -25,7 +25,7 @@ SVSig takes in an input .csv file with 15 columns. An example is in this repo, m
 Optional columns:
 If this information is not available, set column values to arbitrary value. Will not affect ability to run the model.
 - **topo**: rearrangement topology information
-- **tppo_n**: number of rearrangements involved in topology. 
+- **topo_n**: number of rearrangements involved in topology. 
 - **mech**: DNA damage repair mechanism. 
 - **homseq**: number of base pairs of microhomology at the breakpoint junctions. 
  
@@ -43,7 +43,7 @@ SVsig-2D considers each rearrangement to occur independently of each other.
 
 <br>
 
-### Complex Rearrangements Model (_SVsig-2Dc) 
+### Complex Rearrangements Model (_SVsig-2Dc_) 
 - Open runSVsig.m
   - Change path to sample rearrangements file within lines 22-43
 - Open Run2DModel.m
@@ -54,7 +54,19 @@ SVsig-2D considers each rearrangement to occur independently of each other.
 
 
 There are additional parameters that can be set in Run2DModel.m
-- more here
+- **local**:
+- **model_exist**:
+- **len_filter**:
+- **bks_cluster**:
+- **FDR_THRESHOLD**:
+- **output_file**:
+- **complex**:
+- **num_breakpoints_per_bin**:
+- **weights**:
+- **simulations**:
+- **genome_build**:
+
+Note to self: remove local and simulations parameter, add output_file parameter 
 
 
 ### Tutorial
