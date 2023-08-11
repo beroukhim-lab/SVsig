@@ -53,6 +53,7 @@ while sum(counted_bins)>0,
     end
     %%%%%%%%%%%%%
     
+    %%% gene_locus_search just labels for those around IGH, IGL, etc
     gene_i={}; gene_j={};
     gene_i_pos=[]; gene_j_pos=[];
     %if numel(clines)>0

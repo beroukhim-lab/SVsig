@@ -7,7 +7,10 @@ function [bins0, events0, numbins] = remove_low_density_bins(bins0,events0)
 
 
 %[sorted_desnity,idx]=sort(bins0(:,4)./(bins0(:,3)-bins0(:,2)));
+%th=5e-5;
+%20220628 original threshold is 5e-5
 th=5e-5;
+%th=5e-6;
 
 %bins columns: 1 is for the chromosome, 2 is the start position, 3 is the
 %end position, 4 is the number of events per bin

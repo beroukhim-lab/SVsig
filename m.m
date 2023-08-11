@@ -1,4 +1,4 @@
-function [mix_model,opt_alpha, f_bic] = mix_model_param( mfull, model1, model2, events, bins, CHR)
+function [mix_model,opt_alpha, f_bic] = mix_model_param1( mfull, model1, model2, events, bins, CHR)
 global complex
 global weights
 
@@ -13,8 +13,7 @@ global weights
 
 %logical: bins x bins x num_param
 %e.g. for short events param, denotes are the events in this tile short?
-annot_tiles=tiles_annot_copy('length',events,bins,CHR);
-%annot_tiles=tiles_annot('length',events,bins,CHR);
+annot_tiles=tiles_annot('length',events,bins,CHR);
 
 
 
@@ -43,9 +42,7 @@ end
  if complex && weights   
      save('debug_alpha')
      % for 1MB somatic distance cutoff in Xiatong's promiximity matrix
-     %load('/Volumes/xchip_beroukhimlab/Kiran/git/2dmodel/SVsig/cbinom_alpha.mat');
-     load('/Users/shu/SVsig_labcopy/cbinom_alpha.mat');
-
+     load('cbinom_alpha.mat');
      %for 50 kb somatic distance cutoff in X's prox matrix 
      %load('2020021050kbcbinom_alpha.mat')   
      disp('loading continous binomial alpha parameters')
@@ -58,16 +55,16 @@ for c1=1:max(mfull(:))
     log_fac(c1+1)=sum(log(1:c1));
 end
 
-BIC = zeros(3,1);
-alphas = zeros(3,4);
+BIC = zeros(10,1);
+alphas = zeros(10,3);
 
-for k1 = 1:3
+for k1 = 1:10 
 nume=sum(mfull(:));
 alpha=rand(num_param,1);
 nume_1 = sum(mfull(annot_tiles(:,:,1)));
 nume_2 = sum(mfull(annot_tiles(:,:,2)));
 nume_3 = sum(mfull(annot_tiles(:,:,3)));
-%nume_4 = sum(mfull(annot_tiles(:,:,4)));
+
 % optimize over model
 %fincom
 
@@ -117,8 +114,8 @@ mix_model=mix_model/sum(mix_model(:));
         % numerically equivalent for large N and small p)
      
         nnz_idc=mix_model>0&mfull>0;
-%       nnz_idc=mix_model>0;
-        z_idc =  mfull == 0;     
+%        nnz_idc=mix_model>0;
+         z_idc =  mfull == 0;     
 
 % change loglikelihood to compress long and ic
     mfull_short = mfull(annot_tiles(:, :, 1)); 
@@ -163,14 +160,7 @@ mix_model=mix_model/sum(mix_model(:));
 %mfull are the values of the "poisson" distributed xij, mix_model are the
 %pijs, nume is N 
         sLij = sum(sum(mfull(nnz_idc).*log(nume*mix_model(nnz_idc))-nume*mix_model(nnz_idc)-log_fac(mfull(nnz_idc)+1)')) ;
-        zLij = sum(sum(-nume*mix_model(z_idc)))  ; 
-        %xLij= sum(sum(mfull(z_idc).*log(nume*mix_model(z_idc))));
-         %zLij = sum(sum(-nume*mix_model(nnz_idc)))  ; 
-
-        %zLij is all tiles in mix model where
-        %mfull =0 (so z_idc is essentially everything not covered bu
-        %nnz_idc)
-        %this is part of the -n*theta part of log likelihood function 
+        zLij = sum(sum(-nume*mix_model(z_idc)))  ;    
   
 %parameter penality 
  penalty1 = log(nume_1)*(1 - alpha(1))* 8;
@@ -179,8 +169,6 @@ mix_model=mix_model/sum(mix_model(:));
  %3 added terms to BIC as penalty
         % the BIC value
     BIC = -2*(sLij + zLij)+log(nume)*num_param
-    %BIC = -2*(sLij + zLij + xLij)+log(nume)*num_param
-
       %BIC = -2*(sLij + zLij)+penalty1 + penalty2 
       
       %BIC with compressed short and ic tiles
@@ -195,3 +183,15 @@ mix_model=mix_model/sum(mix_model(:));
 %import opt_alpha
         
 
+© 2021 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Help
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About

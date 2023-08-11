@@ -1,5 +1,5 @@
 
-function[hits_table] = runSVsig(local, model_exist, len_filter, bks_cluster, FDR_THRESHOLD, complex, num_breakpoints_per_bin, weights, prop_subset, std_filter, simulations)
+function[hits_table, n_unfiltered, n_filtered] = runSVsig_testlengthdist(length_factors, local, model_exist, len_filter, bks_cluster, FDR_THRESHOLD, complex, num_breakpoints_per_bin, weights, prop_subset, std_filter, simulations)
  
 %global samp_num
 %samp_num is for the power analysis 
@@ -27,8 +27,7 @@ if local
 %use this first one
 %sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/v16prepped_weighted_events_20190724.csv'
  %sv_file='/Users/shu/SVsig_labcopy/complex.csv'
- %sv_file= '/Users/shu/DLBCL/highconf_complex_svaba_1.csv'
- sv_file='/Users/shu/2d_results/v16prepped_weighted_events_20190724.csv'
+ sv_file= '/Users/shu/DLBCL/highconf_complex_svaba_1.csv'
 
 
 %sv_file = '/Volumes/xchip_beroukhimlab/Kiran/complex/v16prepped_weighted_events_20200206.csv'
@@ -41,7 +40,7 @@ if local
   %sv_file = "/Volumes/xchip_beroukhimlab/Kiran/complex/20191202_10nsimulatedalpha1.csv" 
   %sv_file = "/Users/shu/sims/20210204_sij1dx10_ratioslij_a1.csv"
   %sv_file = "/Users/shu/2d_results/2d_results_final/20210527_mixmodel_a0.csv"
-  sv_file= '/Users/shu/2d_results/20210722_mixmodel_500kb_mixmodel.csv'
+  sv_file= "/Users/shu/2d_results/20210722_mixmodel_500kb_mixmodel.csv"
   
     else 
             
@@ -49,42 +48,15 @@ if local
 % sv_file='/Volumes/xchip_beroukhimlab/Shu/prepped_intermediate_ccle_subset.csv'
  %sv_file='/Volumes/xchip_beroukhimlab/Shu/merged_1.6.1.csv'
  
- sv_file='/Users/shu/SVsig_labcopy/merged_1.6.1.csv'
- %sv_file='/Users/shu/2d_results/20220803_merged_phgg_combined.csv'
+% sv_file='/Users/shu/SVsig_labcopy/merged_1.6.1.csv'
   %sv_file= '/Users/shu/2d_results/20220224_events_greaterthan1e5.csv'
   
-  %sv_file='/Users/shu/2d_results/20220315_a1_sim.csv'
-  %sv_file='/Users/shu/2d_results/20220316_a1_nolengthdist.csv'
-  %sv_file='/Users/shu/2d_results/20220505_newsim_eveninter.csv' %this is
-  %the one that gives no results
+   %sv_file='/Users/shu/2d_results/20220315_a1_sim.csv'
+  %sv_file='/Users/shu/2d_results/sims/20220517_newsim_eveninter_1e6bins_noshortevents_fixed_r1.csv'
   
-  %sv_file='/Users/shu/2d_results/20220517_newsim_eveninter_1e6bins_noshortevents_fixed_r2.csv'
-  %sv_file='/Users/shu/2d_results/sims/20220517_newsim_eveninter_1e6bins_noshortevents_fixed_r5.csv'
   
-  %this one has 4 hits usually 
-  %sv_file='/Users/shu/2d_results/sims/20220526_newsim_eveninter_1e6bins_noshortevents_3030bins_r7.csv'
-  
-  %the fixed ones, i think 
- % sv_file='/Users/shu/2d_results/sims/20220609_newsim_eveninter_1e6bins_n3_noshortevents_3030bins_r4.csv'
-  
-  %sv_file='/Users/shu/2d_results/20220517_newsim_eveninter_1e6bins_allevents.csv'
-  
-  %sv_file='/Users/shu/2d_results/sims/20220623_diagsim_withmarg_tilewise_n3_3030bins_Rnormalized_i1.csv'
-  
-  %idk this one does not work
-  %sv_file='/Users/shu/2d_results/sims/20220628_diagsim_withmarg_tilewise_n1_3030bins_Rnormalized_test_i3.csv'
-  
- % sv_file='/Users/shu/2d_results/sims/20220706_diagsim_withmarg_tilewise_n1_3030bins_Rnormalized_i3.csv'
-  
- %USING 1E3 
- %sv_file='/Users/shu/2d_results/sims/20220706_diagsim_withmarg_tilewise_n1_3030bins_Rnormalized_1e3events_i2.csv'
- %sv_file='/Users/shu/2d_results/sims/20220719_diagsim_withmarg_tilewise_n3_3030bins_Rsum_1e3events_i10.csv'
- 
- 
-  %sv_file='/Volumes/xchip_beroukhimlab/Shu/2d_sim/20220324_a1_lengthdist_100bins.csv'
-  %sv_file='/Users/shu/2d_results/20220412_pdiff_lengthdist_100bins.csv'
-  
-  %sv_file='/Users/shu/2d_results/20220225_a1_sim.csv'
+   sv_file='/Users/shu/2d_results/sims/20220719_diagsim_withmarg_tilewise_n3_3030bins_Rsum_1e3events_i1.csv'
+
  %sv_file='/Users/shu/DLBCL/highconf_complex_svaba_1.csv'
  %sv_file='/Users/shu/2d_results/20220103_a0_logtransform_sijdx1000.csv'
  %sv_file='/Users/shu/2d_results/20211021_500kb_a0_lengthdist.csv'
@@ -116,7 +88,7 @@ else
         
     elseif simulations 
 %%sv_file = "/xchip/beroukhimlab/Kiran/complex/20200722simulatedalpha0.csv"
-sv_file = '/xchip/beroukhimlab/Kiran/complex/20200722simulatedalpha1.csv'
+sv_file = "/xchip/beroukhimlab/Kiran/complex/20200722simulatedalpha1.csv"
 %sv_file = "/xchip/beroukhimlab/Kiran/complex/20191202_10nsimulatedalpha1.csv"
 %sv_file = "/xchip/beroukhimlab/Kiran/complex/20200422simtoyalpha1.csv"
     else 
@@ -302,16 +274,12 @@ end
 %in matlab for real numbers mfull' is the transpose of mfull
 %use mfull00 over mfull' + mfull because the events in mfull00 are filtered
 %more stringently`ewq
-
-%load('20220928_complex_postmixmodel')
-
-bks_cluster=0;
+bks_cluster=1;
 if ~bks_cluster
    if weights 
        
        %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom(mfull00, mix_model, [], []);
-      % [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom_avgdist(mfull00, mix_model, [], [], bins, events00);
-    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull00, mix_model, [], [],1);
+       [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom_avgdist(mfull00, mix_model, [], [], bins, events00);
 
     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull+mfull', mix_model, [], [],1, FDR_THRESHOLD);
    else 
@@ -319,7 +287,7 @@ if ~bks_cluster
    end 
 
 else
-    %sij1dx = length_dist_1d_bins(events00,chsize,100);
+    sij1dx = length_dist_1d_bins(events00,chsize,10);
     %PValMH adjusts for clustered fragile sites within bins whereas PVal does not
     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull+mfull', mix_model, bins, events, sij1dx, chsize, CHR, 1, 0.1, 0);
     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
@@ -413,6 +381,8 @@ hits_table.prob = annotated_table.p_mix;
 %remove samples that have only 1 unique sample id (i.e. those that are
 %supported by only 1 sample)
 disp(strcat('the number of hits pre-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
+n_unfiltered = (length(unique(hits_table.cluster_num)));
+
 h1=1;
 clusters_to_keep = [];
 num_samp = zeros(0,length(unique(hits_table.cluster_num)));
@@ -444,6 +414,8 @@ end
 keep = ismember(hits_table.cluster_num, cluster_to_keep);
 
 hits_table = hits_table(keep, :);
+
+n_filtered = (length(unique(hits_table.cluster_num)));
 
 disp(strcat('the number of hits post-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
 %how many SRJs do we find?

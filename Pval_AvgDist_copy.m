@@ -57,7 +57,6 @@ if ~approx_flag
 
 else
     %pval_low=1-exp(-p_zero*nume).*rand(length(zero_k),1);
-    disp('hi')
     pval_low=1-poisscdf(mfull_low-1,nume*p_zero);
      %pval_low = poisspdf(mfull_low, nume*p_zero).*rand_nnz+(1-poisscdf(mfull_low,nume*p_zero));
 
@@ -81,20 +80,19 @@ else
 end
 toc
 
-disp(['calculating support for ' num2str(length(high_k)) ' tiles with >1 events']);
-tic
- t_dv=zeros(length(high_k),2);
-
-for c1=1:length(high_k)
-    [a1, a2]=ind2sub(mat_size,high_k(c1));     
-    %[h, p_ks, n]=compare_avg_length( [a1 a2], bins, events, 0 );
-    [p_mw, n]=compare_avg_length( [a1 a2], bins, events, 0 );
-
-    t_dv(c1,1)=p_mw;
-    t_dv(c1,2)=n;
-
-end
-
+% disp(['calculating support for ' num2str(length(high_k)) ' tiles with >1 events']);
+% tic
+%  t_dv=zeros(length(high_k),2);
+% 
+% for c1=1:length(high_k)
+%     [a1, a2]=ind2sub(mat_size,high_k(c1));     
+%     %[h, p_ks, n]=compare_avg_length( [a1 a2], bins, events, 0 );
+%     [p_mw, n]=compare_avg_length( [a1 a2], bins, events, 0 );
+% 
+%     t_dv(c1,1)=p_mw;
+%     t_dv(c1,2)=n;
+% 
+% end
 p_high_s=p_high;
 toc
 disp(['calculating p-val for ' num2str(length(high_k)) ' tiles with >1 events']);
@@ -115,29 +113,29 @@ toc
 
 %fisher's method to combine two pvals for pval_high0 terms 
 
-combined_pval=zeros(length(high_k),1);
-for c1=1:length(pval_high)
-    if t_dv(c1,2)>4
-    chi_val = -2*(log(pval_high(c1)) + log(t_dv(c1,1)));
-    combined_pval(c1) = 1 - chi2cdf(chi_val,4); 
-else
-    %combined_pval(c1) = pval_high0(c1); 
-    chi_val = -2*(log(pval_high(c1)) + log(t_dv(c1,1)));
-    combined_pval(c1) = 1 - chi2cdf(chi_val,4);    
-    end
-
-end
+% combined_pval=zeros(length(high_k),1);
+% for c1=1:length(pval_high)
+%     if t_dv(c1,2)>4
+%     chi_val = -2*(log(pval_high(c1)) + log(t_dv(c1,1)));
+%     combined_pval(c1) = 1 - chi2cdf(chi_val,4); 
+%     else
+%     %combined_pval(c1) = pval_high0(c1); 
+%     chi_val = -2*(log(pval_high(c1)) + log(t_dv(c1,1)));
+%     combined_pval(c1) = 1 - chi2cdf(chi_val,4);    
+%     end
+% 
+% end
     
 
 %pvalues for all the tiles
-pval=[pval_low zero_k;pval_pos pos_k;combined_pval high_k];
-%pvalues for only the tiles with high counts without the random term
-combined_pval=[combined_pval high_k];
+% pval=[pval_low zero_k;pval_pos pos_k;combined_pval high_k];
+% %pvalues for only the tiles with high counts without the random term
+% combined_pval=[combined_pval high_k];
 
 %%without fisher's method 
-% pval=[pval_low zero_k;pval_pos pos_k;pval_high high_k];
-% %pvalues for only the tiles with high counts without the random term
-% combined_pval=[pval_high high_k];
+pval=[pval_low zero_k;pval_pos pos_k;pval_high high_k];
+%pvalues for only the tiles with high counts without the random term
+combined_pval=[pval_high high_k];
 
 
 

@@ -60,10 +60,6 @@ for c1=CHR
     sij1_area(:,c1,:)=(bsxfun(@times,squeeze(sij1dy(1:end-1,c1,:)),d_sij1dx));
 end
 
-count1=0;
-count2=0;
-count3=0;
-count4=0;
 
 %calculate sij matrix
 for c1=CHR
@@ -94,10 +90,7 @@ for c1=CHR
         sij(c2,c2,:) = ( (1-sd_sij1dx(1:last_diag-1)/diag_bin_size)*squeeze(sij1_area(1:last_diag-1,c1,:)) + (diag_bin_size - sij1dx(last_diag)-1)^2/diag_bin_size/2 * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));
         end 
         sij(c2, c2, :) = bsxfun(@times,sij(c2, c2, :), 1/(bins(c2,3)-bins(c2,2)));
-        count1=count1+ sij(c2, c2, 1) ;
-        count2=count2+ sij(c2, c2, 2) ;
-        count3=count3+ sij(c2, c2, 3) ;
-        count4=count4+ sij(c2, c2, 4) ;
+
 
    % sij(c2,c2,:) = ( (1-sd_sij1dx(1:last_diag-1)/diag_bin_size)*squeeze(sij1_area(1:last_diag-1,c1,:)) + (diag_bin_size - sij1dx(last_diag)-1)^2/diag_bin_size/2 * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));
 %    sij(c2,c2,:) = (sum(bsxfun(@times,squeeze(sij1dy(1:last_diag-1,c1,:)),diff(sij1dx(1:(last_diag)))')) + (diag_bin_size - sij1dx(last_diag)-1) * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));
@@ -118,10 +111,7 @@ for c1=CHR
         end  
         sij(c2, c2, :) = bsxfun(@times,sij(c2, c2, :), 1/(bins(c2,3)-bins(c2,2)));
         
-        count1=count1+ sij(c2, c2, 1) ;
-        count2=count2+ sij(c2, c2, 2) ;
-        count3=count3+ sij(c2, c2, 3) ;
-        count4=count4+ sij(c2, c2, 4) ;
+
 
 
         %        sij(c2,c2,:) = (sum(bsxfun(@times,squeeze(sij1dy(1:last_diag-1,c1,:)),diff(sij1dx(1:(last_diag)))')) + (diag_bin_size - sij1dx(last_diag)-1) * interp1(sij1dx',squeeze(sij1dy(:,c1,:)),diag_bin_size,'pchip'));
@@ -167,6 +157,8 @@ annot_frac(2) = sum(events(:,3)==1&events(:,6)==2)/nume;
 annot_frac(3) = sum(events(:,3)==2&events(:,6)==1)/nume;
 annot_frac(4) = sum(events(:,3)==2&events(:,6)==2)/nume;
 for ca=1:num_annot
+    sij(:,:,ca)=renormalize_tiles(mfull{ca}, sij(:,:,ca), events, bins, CHR);
+    
     sij(:,:,ca) = bsxfun(@rdivide,sij(:,:,ca),sum(sij(:,:,ca), 2));
     sij(:,:,ca) = sij(:,:,ca) * annot_frac(ca);
 end

@@ -14,6 +14,8 @@ EventsFile=sv_file;
 
 load(strcat(WorkDir,'/tracks/MiscVar')); % run gen_misc_var to update variables
 fragile_track=importdata([WorkDir '/tracks/fragile_genes_smith.hg19fp.bed.txt']);
+%fragile_track=importdata([WorkDir '/tracks/HumCFS_hg38_lift_hg19.txt']);
+
 
 if genome_build == 'hg_38'
     fragile_track=importdata([WorkDir '/tracks/fragile_genes.hg38.txt']);
@@ -22,7 +24,7 @@ end
 
 % CHR = 1:23; % chromosomes to include in analysis
 %now global variable
-EventLengthThreshold=200; % filter short event [bp] 
+EventLengthThreshold=200; % filter short event [bp], deafult 200
 %num_breakpoints_per_bin=1000; %def= 80
 num_annot=4;
 min_bin_dist = 500; % def = 500; minimum distance of bins-separating events
@@ -49,19 +51,35 @@ Weights_column = 11;
 % set bins boundries 
 % returns a table of bins with chr number, start and end position, and number of breakpoints per bin
 %[bins0, numbins] = SetBins(events0,num_breakpoints_per_bin,chsize,CHR,min_bin_dist); 
-[bins0, numbins] = SetBins_bylength(events0,5e5, chsize,CHR); 
+[bins0, numbins] = SetBins_bylength(events0,7.5e6, chsize,CHR); 
+
+%bins_all=bins0;
 
 % remove bins with low density of events (need to set up threshold manually) 
-%this throws an error if nothing to remove, fix bug later 
+%this throws an error if nothing to remo%ve, fix bug later 
 [bins0, events0, numbins] = remove_low_density_bins(bins0,events0);
 
 %load in some bins
-%modelp2=load('/Users/shu/20210121_eventratios_withmarg.mat');
+%modelp2=load('/Users/shu/2d_results/20210722_mixmodel_500kb.mat');
 %bins0=modelp2.bins;
 %numbins=length(bins0);
 
+%modelp2=load('/Users/shu/2d_results/20220408_noshortevents_1e6bins.mat');
+%bins0=modelp2.bins;
+%numbins=length(bins0);
+
+
+%keeping bins with low density but without the eventsi n those bins
+%bins0=bins_all;
+%numbins=length(bins0);
+
+%bins=table2array(readtable('/Users/shu/2d_results/20220527_1_22_binssub.csv'));
 [mfull0,bins_event_tble0] = BuildMatrix(events0,bins0,num_annot);
 
+bins_event_tble=bins_event_tble0;
+bins=bins0;
+events00=events0;
+mfull=mfull0;
 
 [bins_event_tble, bins, mfull, events00, removed_events] = RemoveSameSampleEvents(bins_event_tble0, bins0, mfull0, events0,Patient_column,1);
 
@@ -69,9 +87,19 @@ Weights_column = 11;
 [bins_event_tble, bins, mfull, events00, removed_events_std] = RemoveZeroVarSampleEvents(bins_event_tble, bins, mfull, events00);
 
 
+
 R = MarginalProbability(bins_event_tble,events00,numbins); 
 
+% global length_factor
+% disp(num2str(length_factor))
+% disp(R(1:5))
+% %%%code to test robustness of length distribution
+% R=R.^(length_factor);
+% R=2*R/sum(R);
+% disp(R(1:5))
+% 
 sij1dx = length_dist_1d_bins(events00,chsize,10);
+sij1dx=unique(sij1dx);
 sij1dy = EventLengthDist_G(sij1dx,events00,0);
 sij1dy = sum(sij1dy,2);
 sij1dy = sij1dy./sum(sij1dy(1:end-1).*diff(sij1dx'));

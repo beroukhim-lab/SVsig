@@ -47,7 +47,10 @@ tic
 if ~approx_flag
     pval_low=1-(1-p_zero).^nume.*rand(length(zero_k),1);
 else
-    pval_low=1-exp(-p_zero*nume).*rand(length(zero_k),1);
+    %pval_low=1-exp(-p_zero*nume).*rand(length(zero_k),1);
+    %no random term 
+    pval_low=1-exp(-p_zero*nume);
+
 end
 toc
 
@@ -62,6 +65,9 @@ if ~approx_flag
     pval_high = binopdf(mfull_pos, nume, p_pos).*rand_nnz+(1-binocdf(mfull_pos,nume,p_pos));
 else
     pval_high = poisspdf(mfull_pos, nume*p_pos).*rand_nnz+(1-poisscdf(mfull_pos,nume*p_pos));
+    %no random term 
+    pval_high = (1-poisscdf(mfull_pos,nume*p_pos));
+
 end
 toc
 pval_tble=[pval_low zero_k;pval_high pos_k];

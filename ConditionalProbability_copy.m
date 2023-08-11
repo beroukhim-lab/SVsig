@@ -164,18 +164,11 @@ annot_frac(2) = sum(events(:,3)==1&events(:,6)==2)/nume;
 annot_frac(3) = sum(events(:,3)==2&events(:,6)==1)/nume;
 annot_frac(4) = sum(events(:,3)==2&events(:,6)==2)/nume;
 
-annot_tiles_bi=tiles_annot_copy('length',events,bins,CHR);
 for ca=1:num_annot
-    %mfull00=mfull{1}+mfull{2}+mfull{3}+mfull{4};
-    diag_short_e=(sum(sum(mfull{ca}(annot_tiles_bi(:,:,1)))))/(sum(sum(mfull{ca})));
-    short_e=(sum(sum(mfull{ca}(annot_tiles_bi(:,:,2)))))/(sum(sum(mfull{ca})));
-    long_e=(sum(sum(mfull{ca}(annot_tiles_bi(:,:,3)))))/(sum(sum(mfull{ca})));
-    inter_e=(sum(sum(mfull{ca}(annot_tiles_bi(:,:,4)))))/(sum(sum(mfull{ca})));
-    sij(:,:,ca)=renormalize_tiles(sij(:,:,ca), diag_short_e, short_e, long_e, inter_e, events, bins, CHR);
     
+    sij(:,:,ca)=renormalize_tiles(mfull{ca}, sij(:,:,ca), events, bins, CHR);
     
-    
-    %sij(:,:,ca) = bsxfun(@rdivide,sij(:,:,ca),sum(sij(:,:,ca), 2));
+    sij(:,:,ca) = bsxfun(@rdivide,sij(:,:,ca),sum(sij(:,:,ca), 2));
     sij(:,:,ca) = sij(:,:,ca) * annot_frac(ca);
     
     

@@ -46,6 +46,10 @@ if ~isempty(Weights_column)
     output(:,11) = snowman_table.weights;
 end
 
+%MAKE SURE TO DELETE THIS
+%THIS IS JUST TO INCLUDE HOMSEQ IN THE SNOWMAN TABLE
+%output(:,12)=table2array(snowman_table(:,15));
+
 %this is not useful
 %if size(snowman_table,2)>11
 %    [Utopo, ia_topo, ic_topo]=unique(snowman_table.topo);

@@ -1,6 +1,6 @@
-/.mat
-/.csv
-/.xlsx
+*.mat
+*.csv
+*.xlsx
 
 /randomgraphs.m
 /ConditionalProbability_copy1.m

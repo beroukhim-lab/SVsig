@@ -1,5 +1,5 @@
 % length distribution per direction
-function sij1dy = EventLengthDist_G(sij1dx,events,plot_flag)
+function sij1dy = EventLengthDist_G_testlength(sij1dx,events,plot_flag, length_factor)
 
 % returns genome-wide avergae number of events per bp by length for each SV-type
 
@@ -39,11 +39,9 @@ end
 sij1dy(end+1,:)=0;
 
 
-global length_factor
-disp(num2str(length_factor))
-%length_factor=1;
+
 %%%code to test robustness of length distribution
-%sij1dy=sij1dy.^(length_factor);
+sij1dy=sij1dy.^(length_factor);
 
 if plot_flag
    sij1dy_0=sum(sij1dy,2);

@@ -31,7 +31,7 @@ num_breakpoints_per_bin=100;
 %@param weights
 %Do the events have non-integer weights?
 global weights
-weights = false;
+weights = true;
 %@param after running the model we filter out hits that have a standard
 %deviation of the following in either the first or second break
 std_filter = 10;
