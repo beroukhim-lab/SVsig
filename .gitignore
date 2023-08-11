@@ -1,11 +1,12 @@
-*.mat
-*.csv
 *.xlsx
 
 csv/
 working_files/
 
 
+
+cbinom_alpha.mat
+debug_alpha.mat
 /randomgraphs.m
 /ConditionalProbability_copy1.m
 /ConditionalProbability_formula1.m
