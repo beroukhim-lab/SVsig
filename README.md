@@ -76,7 +76,9 @@ make a tutorial later
 
 ## License
 Author: Shu Zhang, shu@broadinstitute.org, shu.zhang@gladstone.ucsf.edu
+
 Contact: Rameen Beroukhim, rameen_beroukhim@dfci.harvard.edu
+
 License: GNU AGPL3, Copyright (C) 2023 Dana-Farber Cancer Institute
 
 Please cite: 
