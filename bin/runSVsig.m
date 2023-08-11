@@ -1,5 +1,6 @@
 
-function[hits_table] = runSVsig(local, model_exist, len_filter, bks_cluster, FDR_THRESHOLD, complex, num_breakpoints_per_bin, weights, prop_subset, std_filter, simulations)
+function[hits_table] = runSVsig(sv_file, model_exist, complex, weights, len_filter, bks_cluster, ...
+FDR_THRESHOLD, bin_length, num_breakpoints_per_bin, std_filter)
  
 
 %load rearrangement data table with the following columns:
@@ -7,52 +8,11 @@ function[hits_table] = runSVsig(local, model_exist, len_filter, bks_cluster, FDR
 % {seqnames, start, strand1, altchr, altpos, strand2,
 % subtype(histology), sv_id, sid(sample ID),donor_unique_id}
 
-
-
-if local   
-    if complex 
-        %sv_file ='/Volumes/xchip_beroukhimlab/Kiran/adjancencies/20190502prepped.csv' 
-        if weights
-            sv_file='/Users/shu/2d_results/v16prepped_weighted_events_20190724.csv'
-        end 
-       
-    elseif simulations 
-        sv_file= '/Users/shu/2d_results/20210722_mixmodel_500kb_mixmodel.csv'
-    else 
-        sv_file='/Users/shu/SVsig_labcopy/merged_1.6.1.csv' 
-    end
-    
-    
-    
-
-else
-    if complex
-        sv_file = '/xchip/beroukhimlab/Kiran/adjancencies/20190502prepped.csv' 
-       if weights 
-           sv_file = '/xchip/beroukhimlab/Kiran/complex/v16prepped_weighted_events_20190724.csv'
-            sv_file='/Users/shu/DLBCL/highconf_complex_svaba_1.csv'
-
-       end
-        
-    elseif simulations 
-%%sv_file = "/xchip/beroukhimlab/Kiran/complex/20200722simulatedalpha0.csv"
-sv_file = '/xchip/beroukhimlab/Kiran/complex/20200722simulatedalpha1.csv'
-%sv_file = "/xchip/beroukhimlab/Kiran/complex/20191202_10nsimulatedalpha1.csv"
-%sv_file = "/xchip/beroukhimlab/Kiran/complex/20200422simtoyalpha1.csv"
-    else 
- %sv_file ='/xchip/beroukhimlab/ofer/matlab/merged_1.6.1.csv'
-
-    end 
-end
-
-
-
-
-
 SVTable=readtable(sv_file, 'Delimiter', ',');
 
 
-%%%%%%%%%%load or create background model%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%load or create background model%%%%%%%%%%
 
 if model_exist
  
@@ -62,14 +22,7 @@ if model_exist
        %load ('backgroundmodel_adjacencies_weighted_20190524');
        load('20210512_complexbackground_5e5bins');
     else 
-        %something is not right with this background model?
-        %load ('20210421_5e6model_testpval.mat')
-        %load 'ICGC_2D_SV_model20190705_88hits.mat'
-        %load ('20210423_background_100bkpts.mat')
-        %load ('20210423_background_5e5bins.mat')
-        %load('20210525_simple.mat')
         load('20210613_mixmodel_a050.mat')
-        %load('20210623_mixmodel_a0.mat')
     end 
 else
       
@@ -115,8 +68,6 @@ TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene
 
 
 
-
-
 %%%%%%%%%FILTRATION%%%%%%%%%%
 %only include hits that are interchromosomal or large than the length
 %filter
@@ -155,12 +106,6 @@ hits_table.prob = annotated_table.p_mix;
 
 
 
-%annotate number of hits 
-%v = accumarray(hits_table.cluster_num, 1);
-%for c1= 1:size(hits_table, 1)
-%hits_table.num_hits(c1) = v(hits_table.cluster_num(c1));
-%end 
-    
 
 disp(strcat('the number of hits pre-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
 h1=1;
@@ -190,15 +135,11 @@ hits_table.num_hits(c1) = num_samp(hits_table.cluster_num(c1));
 end 
     
 
-%keep only the clusters that pass filteration criteria
+%keep only the clusters that pass filtration criteria
 keep = ismember(hits_table.cluster_num, cluster_to_keep);
-
 hits_table = hits_table(keep, :);
 
 disp(strcat('the number of hits post-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
-%how many SRJs do we find?
-%n_hits = length(unique(hits_table.cluster_num));
-%writetable(hits_table, '/Volumes/xchip_beroukhimlab/Kiran/adjancencies/power_calculations/20190705hitstableforrobustness.txt','delimiter','\t')
 
 end   
 

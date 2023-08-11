@@ -67,7 +67,7 @@ There are additional parameters that can be set in Run2DModel.m
 - **genome_build**:
 
 Note to self: remove local and simulations parameter, add output_file parameter 
-
+ALSO move parameters from break_invasion_model to Run2DModel
 
 ### Tutorial
 make a tutorial later

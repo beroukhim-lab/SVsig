@@ -1,3 +1,6 @@
+%%%Function to renormalize tiles following event ratios. 
+%Used at the end of break_invasion_copy.m and double_break_join_model.m}
+
 function [normalized_mat] = renormalize_tiles(mat_ratios, mat, events, bins, CHR)
 
 %ic ratio is ratio of inter:intra events

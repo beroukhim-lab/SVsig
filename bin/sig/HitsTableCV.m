@@ -22,7 +22,7 @@ for c1=1:length(pval_tophits),2
     if numhits~=length(event_loc),
         disp(['wrong number of hits at: ' num2str(pval_tophits(c1,2)) '- -' num2str(numhits) '- -' num2str(length(event_loc))]);
     end
-    for c2=1:length(event_loc),
+    for c2=1:length(event_loc)
     [bini,binj]=ind2sub(mat_size,pval_tophits(c1,2));    
     hitstable(ct,1:2)=[bini,binj]; %bini/j
     hitstable(ct,3)=numhits; %number of events in bin EQVUIALENT to the number of samples because we only allow 1 sample per bin (also checked this using data.table and the sample # in R) 
