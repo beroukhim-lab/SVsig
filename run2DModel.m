@@ -61,21 +61,6 @@ WorkDir = pwd;
 addpath(genpath(pwd));
 
 
-%run at different len_filters and number of breakpoints per bin at double the background rate
-%num_hits = zeros(2, 4);
-%for c1 = 1:2
- %for c2 = 1:4
-%lf = [0, 1e6]; 
-%nbb = [100, 200, 500, 1000]; 
-
-%run model
-%num_breakpoints_per_bin = nbb(c2);
-%disp(num_breakpoints_per_bin)
-%hits_table = runSVsig(local, model_exist, lf(c1), bks_cluster, FDR_THRESHOLD, complex, num_breakpoints_per_bin, weights, [], std_filter, simulations);
-%writetable(hits_table, strcat('/Volumes/xchip_beroukhimlab/Kiran/complex/20191113simulationsbin', num2str(num_breakpoints_per_bin),'filter', num2str(lf(c1)), '.txt'),'delimiter','\t')
-
-
-
 %run model
 hits_table = runSVsig(local, model_exist, len_filter, bks_cluster, FDR_THRESHOLD, complex, num_breakpoints_per_bin, weights, [], std_filter, simulations);
 %writetable(hits_table, '/xchip/beroukhimlab/Kiran/complex/20200212regularbackgroundrate5e5lengthfilter','delimiter','\t')

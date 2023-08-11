@@ -25,4 +25,5 @@ working_files/
 /moregraph.m
 /q_solver_copy.m
 /sij_optimization.m
+/.DS_Store
 

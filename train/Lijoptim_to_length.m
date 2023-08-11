@@ -1,3 +1,6 @@
+%THIS FILE SHOULD NO LONGER BE USED 
+%UPDATED FILE IS Lijoptim_to_length_test.m
+
 function [sij1dy,opt1dy,fval,sij,intra_chr] = Lijoptim_to_length(events,chsize,bins,CHR,R0,mfull,sij1dx,len_factor)
 % finds maximum likelehood 1D distribution for mult-model 
 
