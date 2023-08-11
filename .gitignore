@@ -2,6 +2,8 @@
 *.csv
 *.xlsx
 
+csv/
+
 /randomgraphs.m
 /ConditionalProbability_copy1.m
 /ConditionalProbability_formula1.m
