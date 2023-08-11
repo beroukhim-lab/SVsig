@@ -59,8 +59,6 @@ end
 
 %this function can take a long time bc loops through all possible genes and
 %hits and such 
-%wait jk TophistByGenes doe sthat check HitsTableCV later 
-
 [hitstable_mix,hitstable_mix_lookup] = HitsTableCV(mfull_pval_mix,pa_mix, pval_tophits_mix, bins_event_tble, qFDR_mix, events00, refgene_tble);
 
 disp ('done with HitsTableCV')

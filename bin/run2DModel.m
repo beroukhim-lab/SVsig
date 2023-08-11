@@ -17,10 +17,12 @@ addpath(genpath(pwd));
 
 %path to rearrangements_file
 sv_file='/data/merged_1.6.1.csv' 
+%sv_file='/Users/shu/DLBCL/20210720_DLBCL_allsvaba.csv'
+
 
 
 %path to output file with significant 2D hits %
-output_file = '/results/EXAMPLE_hitsalljunctions.txt'
+output_file = '/results/EXAMPLE_pcawg_hitsalljunctions_fdr0.01.txt'
 
 
 %%%%%%%%% set additional parameters %%%%%%%%%
@@ -50,9 +52,9 @@ len_filter=1e6;
 %the ICGC paper
 %get very different results for when PVal = 0
 bks_cluster=1;
-%param FDR_threshold sets the q value cut off
+%param FDR_threshold sets the q value cut off, default 0.1
 global FDR_THRESHOLD
-FDR_THRESHOLD = 0.1;
+FDR_THRESHOLD = 0.01;
 %set random seed for reproducibility%
 %rng(3014)
 

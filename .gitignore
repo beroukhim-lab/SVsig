@@ -7,24 +7,5 @@ working_files/
 
 cbinom_alpha.mat
 debug_alpha.mat
-/randomgraphs.m
-/ConditionalProbability_copy1.m
-/ConditionalProbability_formula1.m
-/ConditionalProbability_IConly.m
-/ConditionalProbability_lij.m
-/ConditionalProbability_interp.m
-/ConditionalProbability_mediandiag.m
-/ConditionalProbability_medianeventlength.m
-/ConditionalProbability_rewrite.m
-/ConditionalProbability_test.m
-/graphs.m
-/Lijoptim_to_length_IConly.m
-/Lijoptim_to_length_mediandiag_interp.m
-/Lijoptim_to_length_mediandiag.m
-/Lijoptim_to_length_medianeventlength.m
-/Lijoptim_to_length_test1.m
-/moregraph.m
-/q_solver_copy.m
-/sij_optimization.m
-.DS_Store
+/.DS_Store
 

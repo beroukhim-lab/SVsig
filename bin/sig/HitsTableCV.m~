@@ -4,13 +4,7 @@ gene_pad_neg = 1e4;
 gene_pad_pos = 1e4;
 
 disp('generating numeric hits table...');
-notes= [newline, 'warning: if this takes a long time, try changing the length of your bins.', ...
-        newline, 'This function loops through every gene in the significant bin. ', ... 
-        newline, 'NOTE TO SELF to check this function ' ];
-   
-disp(notes)
-   
-  
+
 mat_size=size(pa(:,:,1));
 bin_event_matrix=[bins_event_tble events];
 if iscell(mfull)
