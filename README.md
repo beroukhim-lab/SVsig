@@ -43,7 +43,7 @@ SVsig-2D considers each rearrangement to occur independently of each other.
 
 <br>
 
-###Complex Rearrangements Model (_SVsig-2Dc) 
+### Complex Rearrangements Model (_SVsig-2Dc) 
 - Open runSVsig.m
   - Change path to sample rearrangements file within lines 22-43
 - Open Run2DModel.m
@@ -54,4 +54,8 @@ SVsig-2D considers each rearrangement to occur independently of each other.
 
 
 There are additional parameters that can be set in Run2DModel.m
-- 
+- more here
+
+
+### Tutorial
+make a tutorial later 
