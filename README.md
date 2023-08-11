@@ -33,24 +33,24 @@ If this information is not available, set column values to arbitrary value. Will
 ### Simple Rearrangements Model (_SVsig-2D_)
 
 SVsig-2D considers each rearrangement to occur independently of each other.
-- Open runSVsig.m
+- Open `runSVsig.m`
   - Change path to sample rearrangements file within lines 22-43
-- Open Run2DModel.m 
+- Open `Run2DModel.m` 
   - Make sure: complex, weights, and simulation parameters are all false
   - Set working directory in line 48
   - Change path to write hits table in line 83
-  - Run Run2DModel.m
+  - Run `Run2DModel.m`
 
 <br>
 
 ### Complex Rearrangements Model (_SVsig-2Dc_) 
-- Open runSVsig.m
+- Open `runSVsig.m`
   - Change path to sample rearrangements file within lines 22-43
-- Open Run2DModel.m
+- Open `Run2DModel.m`
   - Set weights and complex parameters to true. 
   - Set working directory in line 48
   - Change path to write hits table in line 83
-  - Run Run2DModel.m
+  - Run `Run2DModel.m`
 
 
 There are additional parameters that can be set in Run2DModel.m
