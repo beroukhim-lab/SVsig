@@ -54,14 +54,14 @@ SVsig-2D considers each rearrangement to occur independently of each other.
 
 
 There are additional parameters that can be set in Run2DModel.m
-- **local**:
-- **model_exist**:
+- **model_exist**: Boolean for 
 - **len_filter**:
 - **bks_cluster**:
 - **FDR_THRESHOLD**:
-- **output_file**:
+- **output_file**: path to output file 
 - **complex**:
 - **num_breakpoints_per_bin**:
+- **bin_length**:
 - **weights**:
 - **simulations**:
 - **genome_build**:
@@ -69,8 +69,17 @@ There are additional parameters that can be set in Run2DModel.m
 Note to self: remove local and simulations parameter, add output_file parameter 
 ALSO move parameters from break_invasion_model to Run2DModel
 
+
+### Outputs
+_SVsig-2D_ and _SVsig-2Dc_ output a file containing significantly recurrently events. Each unique event is denoted with by a cluster number. The genomic coordinates, subtype, and ID information for each rearrangement in a cluster are displayed. In addition, the following columns are present:  
+- **cluster_num**:
+- **pval**:
+- **prob**:
+- **num_hits**:
+
 ### Tutorial
 make a tutorial later
+
 
 
 
