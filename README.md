@@ -1,7 +1,7 @@
 ## *SVsig* - Recurrent structural variations detection in cancer whole genomes
 
 
-*SVsig* is a method developed to classify rearrangements as passenger or driver in cancer patient cohort of whole genome sequences. The distribution of rearrangements in the cancer genome is shaped by both the mechanisms of their formation and the fitness advantages they confer on the cell. This analysis revealed significant predictors of the distribution of rearrangement across the genome and identified known and novel rearrangements that recurred more often than expected given these predictions (for more detailed description: https://doi.org/10.1101/187609)
+*SVsig* is a method developed to classify rearrangements as passenger or driver in cancer patient cohort of whole genome sequences. The distribution of rearrangements in the cancer genome is shaped by both the mechanisms of their formation and the fitness advantages they confer on the cell. This analysis revealed significant predictors of the distribution of rearrangement across the genome and identified known and novel rearrangements that recurred more often than expected given these predictions (for more detailed description: https://doi.org/10.1101/2023.10.13.561748)
 
 *MATLAB toolboxes needed:*
 - Statistics and Machine Learning Toolbox
@@ -54,13 +54,13 @@ SVsig-2D considers each rearrangement to occur independently of each other.
 
 
 There are additional parameters that can be set in Run2DModel.m
-- **model_exist**: Boolean for 
-- **len_filter**:
+- **model_exist**: Boolean to skip model training and use a pre-determined background model. If True, add path to background model in line XX of runSVSig.m
+- **len_filter**: Only considers rearrangements above this length for calculating significance. 
 - **bks_cluster**:
 - **FDR_THRESHOLD**:
 - **output_file**: path to output file 
-- **complex**:
-- **num_breakpoints_per_bin**:
+- **complex**: Boolean to run SVSig-2Dc (complex model). 
+- **num_breakpoints_per_bin**: Average number of breakpoints within a bin. To determine bin boundaries. Currently not used. Note to self -- fix this later. 
 - **bin_length**:
 - **weights**:
 - **simulations**:
