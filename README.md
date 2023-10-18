@@ -26,7 +26,7 @@ Optional columns:
 If this information is not available, set column values to arbitrary value. Will not affect ability to run the model.
 - **topo**: rearrangement topology information
 - **topo_n**: number of rearrangements involved in topology. 
-- **mech**: DNA damage repair mechanism. 
+- **mech**: DNA damage repair mechanism predicted to generate the rearrangement. 
 - **homseq**: number of base pairs of microhomology at the breakpoint junctions. 
  
 
@@ -57,14 +57,14 @@ There are additional parameters that can be set in Run2DModel.m
 - **model_exist**: Boolean to skip model training and use a pre-determined background model. If True, add path to background model in line XX of runSVSig.m
 - **len_filter**: Only considers rearrangements above this length for calculating significance. 
 - **bks_cluster**:
-- **FDR_THRESHOLD**:
+- **FDR_THRESHOLD**: FDR threshold for determining significance. 
 - **output_file**: path to output file 
 - **complex**: Boolean to run SVSig-2Dc (complex model). 
 - **num_breakpoints_per_bin**: Average number of breakpoints within a bin. To determine bin boundaries. Currently not used. Note to self -- fix this later. 
-- **bin_length**:
+- **bin_length**: Length of bin to divide genome. Default: 500kb
 - **weights**:
-- **simulations**:
-- **genome_build**:
+- **simulations**: Boolean to test simulated data. 
+- **genome_build**: 'hg19' or 'hg_38'.
 
 Note to self: remove local and simulations parameter, add output_file parameter 
 ALSO move parameters from break_invasion_model to Run2DModel
@@ -72,10 +72,10 @@ ALSO move parameters from break_invasion_model to Run2DModel
 
 ### Outputs
 _SVsig-2D_ and _SVsig-2Dc_ output a file containing significantly recurrently events. Each unique event is denoted with by a cluster number. The genomic coordinates, subtype, and ID information for each rearrangement in a cluster are displayed. In addition, the following columns are present:  
-- **cluster_num**:
+- **cluster_num**: 
 - **pval**:
-- **prob**:
-- **num_hits**:
+- **prob**: 
+- **num_hits**: Number of unique samples containing the rearrangement. 
 
 ### Tutorial
 make a tutorial later
@@ -90,4 +90,4 @@ Contact: Rameen Beroukhim, rameen_beroukhim@dfci.harvard.edu
 
 License: GNU AGPL3, Copyright (C) 2023 Dana-Farber Cancer Institute
 
-Please cite: 
+Please cite: Zhang S, Kumar KH, Shapira O, et al. Detecting significantly recurrent genomic connections from simple and complex rearrangements in the cancer genome. _bioRxiv_ (2023). https://doi.org/10.1101/2023.10.13.561748
