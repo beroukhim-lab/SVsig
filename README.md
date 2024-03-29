@@ -62,7 +62,7 @@ There are additional parameters that can be set in Run2DModel.m
 - **complex**: Boolean to run SVSig-2Dc (complex model). 
 - **num_breakpoints_per_bin**: Average number of breakpoints within a bin. To determine bin boundaries. Currently not used. Note to self -- fix this later. 
 - **bin_length**: Length of bin to divide genome. Default: 500kb
-- **weights**:
+- **weights**: Weight given to each individual connection, ranges from 0-1. Weight=1 for the simple model. For the complex model, weights are obtained from the juxtapositions file after running [JaBbA](https://github.com/mskilab-org/JaBbA)
 - **simulations**: Boolean to test simulated data. 
 - **genome_build**: 'hg19' or 'hg_38'.
 
@@ -72,8 +72,8 @@ ALSO move parameters from break_invasion_model to Run2DModel
 
 ### Outputs
 _SVsig-2D_ and _SVsig-2Dc_ output a file containing significantly recurrently events. Each unique event is denoted with by a cluster number. The genomic coordinates, subtype, and ID information for each rearrangement in a cluster are displayed. In addition, the following columns are present:  
-- **cluster_num**: 
-- **pval**:
+- **cluster_num**: Cluster number each connection belongs to. 
+- **pval**: 
 - **prob**: 
 - **num_hits**: Number of unique samples containing the rearrangement. 
 
