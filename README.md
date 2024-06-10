@@ -20,7 +20,7 @@ SVSig takes in an input .csv file with 15 columns. An example is in this repo un
 - **sv_id**: ID for individual rearrangement
 - **sid**: Patient ID for the rearrangement
 - **donor_unique_id**: Patient ID for the rearrangement
-- **weights**: 
+- **weights**: Ranges from 0-1, representing the weight an individual connection is given to an entire rearragnement event. 
 
 Optional columns:
 If this information is not available, set column values to arbitrary value. Will not affect ability to run the model.
@@ -56,7 +56,7 @@ SVsig-2D considers each rearrangement to occur independently of each other.
 There are additional parameters that can be set in Run2DModel.m
 - **model_exist**: Boolean to skip model training and use a pre-determined background model. If True, add path to background model in line XX of runSVSig.m
 - **len_filter**: Only considers rearrangements above this length for calculating significance. 
-- **bks_cluster**:
+- **bks_cluster**: Set to 1. 
 - **FDR_THRESHOLD**: FDR threshold for determining significance. 
 - **output_file**: path to output file 
 - **complex**: Boolean to run SVSig-2Dc (complex model). 
@@ -73,12 +73,11 @@ ALSO move parameters from break_invasion_model to Run2DModel
 ### Outputs
 _SVsig-2D_ and _SVsig-2Dc_ output a file containing significantly recurrently events. Each unique event is denoted with by a cluster number. The genomic coordinates, subtype, and ID information for each rearrangement in a cluster are displayed. In addition, the following columns are present:  
 - **cluster_num**: Cluster number each connection belongs to. 
-- **pval**: 
+- **pval**: Significance for the rearrangement event. 
 - **prob**: 
 - **num_hits**: Number of unique samples containing the rearrangement. 
 
 ### Tutorial
-make a tutorial later
 
 
 
