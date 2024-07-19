@@ -3,17 +3,24 @@
 
 *SVsig* is a method developed to classify rearrangements as passenger or driver in cancer patient cohort of whole genome sequences. The distribution of rearrangements in the cancer genome is shaped by both the mechanisms of their formation and the fitness advantages they confer on the cell. This analysis revealed significant predictors of the distribution of rearrangement across the genome and identified known and novel rearrangements that recurred more often than expected given these predictions (for more detailed description: https://doi.org/10.1101/2023.10.13.561748)
 
-*MATLAB toolboxes needed:*
+
+## Installing _SVSig_
+
+SVSig uses MATLAB, which can be obtained [here](https://www.mathworks.com/products/matlab.html). This version has primarily been tested using `MATLAB_R2020a` on macOS (Sonoma, 14.5). 
+
+Additionally, install the following MATLAB toolboxes:
 - Statistics and Machine Learning Toolbox
 - Optimization Toolbox
 
-This version has primarily been tested using `MATLAB_R2020a`. 
+Finally, clone this repo into the directory 
 
-## How to run _SVsig_
+
+
+## Running _SVsig_
 
 
 ### Preparing files
-SVSig takes in an input .csv file with 15 columns. An example is in this repo under data/merged_1.6.1.csv. Your file must match the column names exactly. 
+SVSig takes in an input .csv file with 15 columns. An example is in this repo under `data/merged_1.6.1.csv`. Your file must match the column names exactly. 
 - **seqnames, start, strand, altchr, altpos, altstrand**: genomic coordinates of both rearrangement breakpoints.
     - Note that chromosome coordinates are integers only. chrX and chrY are changed to 23 and 24, respectively. 
 - **dcc_project_code**: histology or tissue type information. 
@@ -32,7 +39,7 @@ If this information is not available, set column values to arbitrary value. Will
 
 ### Simple Rearrangements Model (_SVsig-2D_)
 
-SVsig-2D considers each rearrangement to occur independently of each other.
+_SVsig-2D_ considers each rearrangement to occur independently of each other.
 - Open `runSVsig.m`
   - Change path to sample rearrangements file within lines 22-43
 - Open `Run2DModel.m` 
@@ -44,6 +51,7 @@ SVsig-2D considers each rearrangement to occur independently of each other.
 <br>
 
 ### Complex Rearrangements Model (_SVsig-2Dc_) 
+_SVsig-2Dc_ 
 - Open `runSVsig.m`
   - Change path to sample rearrangements file within lines 22-43
 - Open `Run2DModel.m`
@@ -53,15 +61,15 @@ SVsig-2D considers each rearrangement to occur independently of each other.
   - Run `Run2DModel.m`
 
 
-There are additional parameters that can be set in Run2DModel.m
-- **model_exist**: Boolean to skip model training and use a pre-determined background model. If True, add path to background model in line XX of runSVSig.m
-- **len_filter**: Only considers rearrangements above this length for calculating significance. 
+### Additional parameters (set in Run2DModel.m)
+- **model_exist**: Boolean to skip model training and use a pre-determined background model. If True, add path to background model in line 23 (complex model) or 25 (simple model) of runSVSig.m. 
+- **len_filter**: Only considers rearrangements above this length for calculating significance. Default is 1Mb. 
 - **bks_cluster**: Set to 1. 
 - **FDR_THRESHOLD**: FDR threshold for determining significance. 
 - **output_file**: path to output file 
 - **complex**: Boolean to run SVSig-2Dc (complex model). 
-- **num_breakpoints_per_bin**: Average number of breakpoints within a bin. To determine bin boundaries. Currently not used. Note to self -- fix this later. 
-- **bin_length**: Length of bin to divide genome. Default: 500kb
+- **num_breakpoints_per_bin**: Average number of breakpoints within a bin. Determines bin boundaries so that each tile has approximately this number of breakpoints. Currently not used.
+- **bin_length**: Length of bin to divide genome. Suggested ranges are 500kb - 2Mb.
 - **weights**: Weight given to each individual connection, ranges from 0-1. Weight=1 for the simple model. For the complex model, weights are obtained from the juxtapositions file after running [JaBbA](https://github.com/mskilab-org/JaBbA)
 - **simulations**: Boolean to test simulated data. 
 - **genome_build**: 'hg19' or 'hg_38'.
@@ -77,7 +85,11 @@ _SVsig-2D_ and _SVsig-2Dc_ output a file containing significantly recurrently ev
 - **prob**: 
 - **num_hits**: Number of unique samples containing the rearrangement. 
 
-### Tutorial
+## Tutorial
+
+To ----. Change the --- to 1e6 ---.
+
+Runtime will be about XX minutes. An expected outputs file is shown at ---. 
 
 
 
