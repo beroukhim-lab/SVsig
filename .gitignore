@@ -7,5 +7,5 @@ working_files/
 
 cbinom_alpha.mat
 debug_alpha.mat
-/.DS_Store
+*.DS_Store
 
