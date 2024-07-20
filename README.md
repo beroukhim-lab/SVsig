@@ -52,7 +52,9 @@ _SVsig-2D_ considers each rearrangement to occur independently of each other.
 <br>
 
 ### Complex Rearrangements Model (_SVsig-2Dc_) 
-_SVsig-2Dc_ accounts for novel connections that occur from rearrangements that occur in proximity to each other. 
+_SVsig-2Dc_ accounts for novel connections that arise from neiboring rearrangements. 
+
+- To first -----, run [JaBbA](https://github.com/mskilab-org/JaBbA), which 
 
 
 - Open `runSVsig.m`
@@ -78,9 +80,6 @@ _SVsig-2Dc_ accounts for novel connections that occur from rearrangements that o
 - **simulations**: Boolean to test simulated data. 
 - **genome_build**: 'hg19' or 'hg_38'.
 
-Note to self: remove local and simulations parameter, add output_file parameter 
-ALSO move parameters from break_invasion_model to Run2DModel
-
 
 ### Outputs
 _SVsig-2D_ and _SVsig-2Dc_ output a file containing significantly recurrently events. Each unique event is denoted with by a cluster number. The genomic coordinates, subtype, and ID information for each rearrangement in a cluster are displayed. In addition, the following columns are present:  
@@ -91,13 +90,23 @@ _SVsig-2D_ and _SVsig-2Dc_ output a file containing significantly recurrently ev
 
 ## Tutorial
 
-To ensure that SVsig is installed and running properly, we will run the file in `data/merged_1.6.1.csv`. Change the following parameters:
+To ensure that SVsig is installed and running properly, we will run the file in `data/TUTORIAL_rearrangements.csv`. Change the following parameters:
 
 - **bin_length**: 5e6
 - **FDR_THRESHOLD**: 0.01
 
-Runtime will be about XX minutes (on standard laptop with 16GB RAM). The expected output file is shown at `EXAMPLE_pcawg_hitsalljunctions.txt`. 
+Runtime was measured to be around 7 minutes on a standard laptop with 16GB RAM. The expected output file is shown at `results/TUTORIAL_hitsalljunctions_fdr0.01_1e6bins.txt`. 
 
+To recreate the results in the manuscript from SVSig-2D, use the `data/merged_1.6.1.csv` file, which includes the 300,000 rearrangements from the PCAWG cohort. Additionally, use the following parameters: 
+
+- **bin_length**: 5e5
+- **FDR_THRESHOLD**: 0.1
+
+## Troubleshooting
+
+Common issues with running _SVSig_ often involve the number of rearrangements in your dataset. SVSig requires a large number of rearrangements since they become sparse once distributed across the genome-wide adjacency matrix. Additionally, at least one rearrangement needs to exist on every chromosome. Ideally, there are at least 100,000 rearrangements in your dataset, although we have run _SVSig_ with data containing only 50,000 rearrangements. For smaller datasets, we recommend increasing the bin_length parameter and increasing the FDR. 
+
+Another option for smaller datsets is generating and loading in the background model using the PCAWG rearrangements (provided in this repo). Afterwards, rearrangements in the new dataset that occur at a higher frequency than the PCAWG background rate can be detected. 
 
 
 
