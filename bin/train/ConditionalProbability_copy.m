@@ -40,8 +40,8 @@ sij1dy = zeros(length(sij1dx),1,num_annot);
 sij1dy(:,1,:) = EventLengthDist_G(sij1dx,events,0);
 
 %to test changes in 1/L distribution
-n=1;
-sij1dy(:,1,:)=(sij1dy(:,1,:)).^n;
+%n=1;
+%sij1dy(:,1,:)=(sij1dy(:,1,:)).^n;
 
 %line to account for higher sij1dx binning
 %sij1dy(:,1,:)=(100/10).*sij1dy(:,1,:);

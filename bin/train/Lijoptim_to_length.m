@@ -34,8 +34,8 @@ inter_lij=inter_chr/inter_rij;
 sij1dy = EventLengthDist_G(sij1dx,events,0);
 
 %to test changes in 1/L distribution
-n=1;
-sij1dy=(sij1dy).^n;
+%n=1;
+%sij1dy=(sij1dy).^n;
 
 %to account for differing sij1dy values
 %sij1dy=(100/10).*sij1dy;

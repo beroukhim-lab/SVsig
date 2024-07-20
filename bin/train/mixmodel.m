@@ -20,6 +20,6 @@ mfull00=mfull{1}+mfull{2}+mfull{3}+mfull{4};
 
 
 disp(strcat('optimal alpha', num2str(opt_alpha)));
-%save('model1model220191011.mat')
+save('20240719_testmodel.mat')
 
 

@@ -16,13 +16,14 @@ WorkDir = pwd;
 addpath(genpath(pwd));
 
 %path to rearrangements_file
-sv_file='/data/merged_1.6.1.csv' 
-%sv_file='/Users/shu/DLBCL/20210720_DLBCL_allsvaba.csv'
+%sv_file='/data/merged_1.6.1.csv'
+sv_file='/data/tutorial_rearrangements.csv'
 
 
 
-%path to output file with significant 2D hits %
-output_file = '/results/EXAMPLE_pcawg_hitsalljunctions_fdr0.01.txt'
+
+%path to write output file with significant 2D hits %
+output_file = '/Users/shu/SVsig_labcopy/results/tutorial_hitsalljunctions_fdr0.01_1e6bins.txt'
 
 
 %%%%%%%%% set additional parameters %%%%%%%%%
@@ -59,13 +60,10 @@ FDR_THRESHOLD = 0.01;
 %rng(3014)
 
 
-global num_breakpoints_per_bin 
-%Ofer's default was 100
-%Kiran's default for Xiaotong's Feb matrix was 1000
-%else %300 for complex weighted model
+global num_breakpoints_per_bin %to determine custom bin boundaries for adjacency matrix
 num_breakpoints_per_bin=100;
 
-global bin_length
+global bin_length %length of bins for adjacency matrix 
 bin_length=1e6;
 
 global CHR %which chromosomes to consider in building the matrix

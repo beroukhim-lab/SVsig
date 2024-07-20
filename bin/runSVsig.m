@@ -22,7 +22,8 @@ if model_exist
        %load ('backgroundmodel_adjacencies_weighted_20190524');
        load('20210512_complexbackground_5e5bins');
     else 
-        load('20210613_mixmodel_a050.mat')
+        %load('20210613_mixmodel_a050.mat')
+        load('20240719_testmodel.mat')
     end 
 else
       
@@ -34,7 +35,7 @@ else
 end
 
 
-bks_cluster=0;
+bks_cluster=1;
 if ~bks_cluster
    if weights 
        %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom(mfull00, mix_model, [], []);
@@ -46,11 +47,12 @@ if ~bks_cluster
    end 
 
 else
-    %sij1dx = length_dist_1d_bins(events00,chsize,100);
+    sij1dx = length_dist_1d_bins(events00,chsize,100);
     %PValMH adjusts for clustered fragile sites within bins whereas PVal does not
     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull+mfull', mix_model, bins, events, sij1dx, chsize, CHR, 1, 0.1, 0);
     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
+     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist_copy(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
 
 end
 
@@ -104,8 +106,6 @@ hits_table.pos_j = annotated_table.altpos;
 hits_table.strand_j = annotated_table.altstrand;
 hits_table.pval = annotated_table.pval;
 hits_table.prob = annotated_table.p_mix;
-
-
 
 
 
