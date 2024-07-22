@@ -41,7 +41,7 @@ If this information is not available, set column values to arbitrary value. Will
 ### Simple Rearrangements Model (_SVsig-2D_)
 
 _SVsig-2D_ considers each rearrangement to occur independently of each other.
-- Open `Run2DModel.m`
+- Open `bin/run2DModel.m`
   - Set the paths to the working directory, rearrangements file you wish to analyze, and output destination file
   - Ensure: **complex**, **weights**, and **model_exist** parameters are false
   - Run `Run2DModel.m`
@@ -53,10 +53,10 @@ _SVsig-2Dc_ accounts for novel connections that arise from neiboring rearrangeme
 
 - To first identify neighboring rearrangements, run [JaBbA](https://github.com/mskilab-org/JaBbA) to obtain a juxtapositions file.
 
-- Open `Run2DModel.m`
+- Open `bin/run2DModel.m`
   - Set the paths to the working directory, rearrangements file you wish to analyze, and output destination file
   - Set the **weights** and **complex** parameters to true. 
-  - Run `Run2DModel.m`
+  - Run `run2DModel.m`
   - After line 44 in `mix_model_param.m`, run `mix_model_alpha.R`
   - Continue running `mix_model_param.m` until completion
 
