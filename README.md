@@ -44,7 +44,7 @@ _SVsig-2D_ considers each rearrangement to occur independently of each other.
 - Open `bin/run2DModel.m`
   - Set the paths to the working directory, rearrangements file you wish to analyze, and output destination file
   - Ensure: **complex**, **weights**, and **model_exist** parameters are false
-  - Run `Run2DModel.m`
+  - Run `run2DModel.m`
 
 <br>
 
@@ -62,7 +62,7 @@ _SVsig-2Dc_ accounts for novel connections that arise from neiboring rearrangeme
 
 <br>
 
-### Additional parameters (set in Run2DModel.m)
+### Additional parameters (set in run2DModel.m)
 - **model_exist**: Boolean to skip model training and use a pre-determined background model. If True, add path to background model in line 23 (complex model) or 25 (simple model) of runSVSig.m. 
 - **len_filter**: Only considers rearrangements above this length for calculating significance. Default is 1Mb. 
 - **bks_cluster**: Set to 1. 
@@ -73,17 +73,18 @@ _SVsig-2Dc_ accounts for novel connections that arise from neiboring rearrangeme
 - **bin_length**: Length of bin to divide genome. Suggested ranges are 500kb - 2Mb. Note that the number of calculations scales quadratically as bin_length decreases. 
 - **weights**: Weight given to each individual connection, ranges from 0-1. Weight=1 for the simple model. For the complex model, weights are obtained from the juxtapositions file after running [JaBbA](https://github.com/mskilab-org/JaBbA)
 - **genome_build**: 'hg19' or 'hg_38'.
-
+<br>
 
 ### Outputs
 _SVsig-2D_ and _SVsig-2Dc_ output a file containing significantly recurrently events. Each unique event is denoted with by a cluster number. The genomic coordinates, subtype, and ID information for each rearrangement in a cluster are displayed. In addition, the following columns are present:  
 - **cluster_num**: Cluster number each connection belongs to. 
 - **pval**: Significance for the rearrangement event. 
 - **num_hits**: Number of unique samples containing the rearrangement. 
+<br>
 
 ## Tutorial
 
-To ensure that SVsig is installed and running properly, we will run the file in `data/TUTORIAL_rearrangements.csv`, which contains a random sampling of 100,000 rearrangements from the dataset in the manuscript. Change the following parameters:
+To ensure that SVsig is installed and running properly, we will run the file `data/TUTORIAL_rearrangements.csv`, which contains a random sampling of 100,000 rearrangements from the dataset in the manuscript. Change the following parameters (use the default for the remaining parameters) and run SVSig-2D:
 
 - **bin_length**: 1e6
 - **FDR_THRESHOLD**: 0.01
