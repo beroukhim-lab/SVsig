@@ -1,7 +1,7 @@
 function TbyGene=TophitsByGenes(hitstable,hitstable_lookup,pos_pad,bins,refgene,refgene_tble,UTumor,CosmicCencus,uFusionTable,bins_annot)
 
 bin_size_th=2e6;
-max_num_gene=2; % max number of genes to list per tile
+%max_num_gene=2; % max number of genes to list per tile
 
     
 TbyGene = struct('bins',[],'gene_i',[],'pos_i',[],'chr_i',[],'pos_i_s',[],'pos_i_e',[],'gene_j',[],'pos_j',[],'chr_j',[],'pos_j_s',[],'pos_j_e',[],'p_val',[],'num_events',[],'annot',[],'avg_dist',[],'std_i',[],'std_j',[],'tumor_1',[],'tumor_2',[],'tumor_3',[],'tumor_1n',[],'tumor_2n',[],'tumor_3n',[],'pp',[],'pm',[],'mp',[],'mm',[]);
@@ -106,6 +106,12 @@ while sum(counted_bins)>0,
     end
 
     [gene_i, gene_j] = known_cancer_genes_annot(gene_i, gene_j, uFusionTable, CosmicCencus);
+
+    %Antonia: Move genes with asterisks to the front of the list
+    prioritize = endsWith(string(gene_i), "*");
+    gene_i = [gene_i(prioritize), gene_i(~prioritize)];
+    prioritize = endsWith(string(gene_j), "*");
+    gene_j = [gene_j(prioritize), gene_j(~prioritize)];
     
     TbyGene(Tc).pos_i = sprintf('%2d:%9d-%9d',range(Tc,1),range(Tc,2),range(Tc,3));
     TbyGene(Tc).pos_j = sprintf('%2d:%9d-%9d',range(Tc,4),range(Tc,5),range(Tc,6));
@@ -116,18 +122,10 @@ while sum(counted_bins)>0,
     TbyGene(Tc).pos_j_s=range(Tc,5);
     TbyGene(Tc).pos_j_e=range(Tc,6);
     if ~isempty(gene_i),
-        if length(gene_i)<=max_num_gene,
-            TbyGene(Tc).gene_i = gene_i;
-        else
-            TbyGene(Tc).gene_i = gene_i(1:max_num_gene);
-        end
+        TbyGene(Tc).gene_i = gene_i;
     end
     if ~isempty(gene_j),
-        if length(gene_j)<=max_num_gene,
-            TbyGene(Tc).gene_j = gene_j;
-        else
-            TbyGene(Tc).gene_j = gene_j(1:max_num_gene);
-        end
+        TbyGene(Tc).gene_j = gene_j;
     end
     
     if ~isempty(bins_annot),
