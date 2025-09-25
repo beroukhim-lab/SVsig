@@ -28,6 +28,8 @@ if isempty(TbyGene_Table(c1).gene_j),
 end
             chits.gene_i = repmat(TbyGene_Table(c1).gene_i(1),height(chits),1);
             chits.gene_j = repmat(TbyGene_Table(c1).gene_j(1),height(chits),1);
+            chits.nearby_genes_i = repmat({TbyGene_Table(c1).gene_i},height(chits),1);
+            chits.nearby_genes_j = repmat({TbyGene_Table(c1).gene_j},height(chits),1);
             chits.hit_num=c1*ones(sum(SVTable_lines),1);
             chits.pval=str2double(TbyGene_Table(c1).p_val)*ones(sum(SVTable_lines),1);
             chits.tile_num=c2*ones(sum(SVTable_lines),1);
