@@ -54,6 +54,9 @@ Weights_column = 11;
 %[bins0, numbins] = SetBins(events0,num_breakpoints_per_bin,chsize,CHR,min_bin_dist); 
 [bins0, numbins] = SetBins_bylength(events0, bin_length, chsize,CHR); 
 
+% 2026/02/17: exported bins0 as the bin boundary definitions, before we
+% drop the empty bins
+
 %bins_all=bins0;
 
 % remove bins with low density of events (need to set up threshold manually) 
@@ -130,7 +133,6 @@ else
 
     %make sure sum to 2
     p = 2*p ./ sum(sum(p));
-
 
 end
 
