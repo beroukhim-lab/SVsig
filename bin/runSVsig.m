@@ -1,6 +1,13 @@
 
 function[hits_table] = runSVsig(sv_file, model_exist, complex, weights, len_filter, bks_cluster, ...
-FDR_THRESHOLD, bin_length, num_breakpoints_per_bin, std_filter)
+FDR_THRESHOLD, bin_length, num_breakpoints_per_bin, std_filter, model_file, tier_std_cutoff)
+
+if nargin < 11 || isempty(model_file)
+    model_file = '';
+end
+if nargin < 12 || isempty(tier_std_cutoff)
+    tier_std_cutoff = 38491;
+end
  
 
 %load rearrangement data table with the following columns:
@@ -15,16 +22,14 @@ SVTable=readtable(sv_file, 'Delimiter', ',');
 %%%%%%%%%%load or create background model%%%%%%%%%%
 
 if model_exist
- 
-    %override bks_cluster assignment in background model loading
-    %bks_cluster = 1;
-    if complex 
-       %load ('backgroundmodel_adjacencies_weighted_20190524');
-       load('20210512_complexbackground_5e5bins');
-    else 
-        %load('20210613_mixmodel_a050.mat')
-        load('20240719_testmodel.mat')
-    end 
+
+    if isempty(model_file)
+        error('runSVsig:MissingModelFile', 'model_exist=true requires a non-empty model_file path.');
+    end
+    if ~isfile(model_file)
+        error('runSVsig:MissingModelFile', 'model_file does not exist: %s', model_file);
+    end
+    load(model_file);
 else
       
     %calculate break invasion and double break join models
@@ -90,7 +95,7 @@ TbyGene_mix_lf = TbyGene_mix(hit_2_include);
         
 
 
-annotated_table = annotate_hits_list( TbyGene_mix_lf,SVTable,bins,hitstable_mix_lookup,pa_mix );
+annotated_table = annotate_hits_list( TbyGene_mix_lf,SVTable,bins,hitstable_mix_lookup,pa_mix,qFDR_mix );
 hits_table=table();
 hits_table.cluster_num = annotated_table.hit_num;
 hits_table.sid = annotated_table.sid;
@@ -100,12 +105,15 @@ hits_table.gene_j = annotated_table.gene_j;
 hits_table.all_genes_j = annotated_table.nearby_genes_j;
 
 hits_table.subtype = annotated_table.dcc_project_code;
+hits_table.bin_i = annotated_table.bin_i;
 hits_table.chr_i = annotated_table.seqnames;
 hits_table.pos_i = annotated_table.start;
 hits_table.strand_i = annotated_table.strand;
+hits_table.bin_j = annotated_table.bin_j;
 hits_table.chr_j = annotated_table.altchr;
 hits_table.pos_j = annotated_table.altpos;
 hits_table.strand_j = annotated_table.altstrand;
+hits_table.tile_qval = annotated_table.tile_qval;
 hits_table.pval = annotated_table.pval;
 hits_table.prob = annotated_table.p_mix;
 
@@ -113,35 +121,48 @@ hits_table.prob = annotated_table.p_mix;
 
 
 disp(strcat('the number of hits pre-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
-h1=1;
+clusters = unique(hits_table.cluster_num);
+num_clusters = numel(clusters);
 clusters_to_keep = [];
-num_samp = zeros(0,length(unique(hits_table.cluster_num)));
-for c1= 1:length(unique(hits_table.cluster_num))
+num_samp = zeros(num_clusters,1);
+stddev_i_by_cluster = zeros(num_clusters,1);
+stddev_j_by_cluster = zeros(num_clusters,1);
 
- %find all the samples for the particular cluster_num
- idx = find(hits_table.cluster_num==c1);
-  subtable = hits_table(idx, :);
-  
-  %annotate number of unique samples per hit
+for c1 = 1:num_clusters
+
+% find all the samples for the particular cluster_num
+ idx = find(hits_table.cluster_num == clusters(c1));
+ subtable = hits_table(idx, :);
+
+ % annotate number of unique samples per hit
  num_samp(c1) = length(unique(subtable.sid));
-  
-  %are all the hits from the same sample?
-  %are the breakpoints greater than a standard deviation of 10?
- if (size(unique(subtable.sid),1) > 1  && std(subtable.pos_i) > std_filter && std(subtable.pos_j) > std_filter)
-     cluster_to_keep(h1) = c1; 
-     h1 = h1 + 1;
 
-end 
-end 
+ % calculate stddev for both breakpoints
+ stddev_i_by_cluster(c1) = std(subtable.pos_i);
+ stddev_j_by_cluster(c1) = std(subtable.pos_j);
 
-%put num_samp in the hits_table
-for c1= 1:size(hits_table, 1)
-hits_table.num_hits(c1) = num_samp(hits_table.cluster_num(c1));
-end 
+    % are all the hits from the same sample?
+    % are the breakpoints greater than a standard deviation of 10?
+ if (size(unique(subtable.sid),1) > 1 && stddev_i_by_cluster(c1) > std_filter && stddev_j_by_cluster(c1) > std_filter)
+     clusters_to_keep(end+1) = clusters(c1);
+ end
+end
+
+[~, cluster_idx] = ismember(hits_table.cluster_num, clusters);
+hits_table.num_hits = num_samp(cluster_idx);
+hits_table.stddev_i = stddev_i_by_cluster(cluster_idx);
+hits_table.stddev_j = stddev_j_by_cluster(cluster_idx);
+
+tier = repmat({'tier 3'}, height(hits_table), 1);
+is_tier1 = hits_table.stddev_i <= tier_std_cutoff & hits_table.stddev_j <= tier_std_cutoff;
+is_tier2 = xor(hits_table.stddev_i <= tier_std_cutoff, hits_table.stddev_j <= tier_std_cutoff);
+tier(is_tier1) = {'tier 1'};
+tier(is_tier2) = {'tier 2'};
+hits_table.tier = tier;
     
 
 %keep only the clusters that pass filtration criteria
-keep = ismember(hits_table.cluster_num, cluster_to_keep);
+keep = ismember(hits_table.cluster_num, clusters_to_keep);
 hits_table = hits_table(keep, :);
 
 disp(strcat('the number of hits post-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
