@@ -92,13 +92,15 @@ function hits_table = run2DModel(varargin)
     if ~isempty(random_seed)
         rng(random_seed);
     end
-    
+
+    save_bin_index = getOpt(cfg, 'save_bin_index', false);
+
     % Print parameters to log file for reproducibility and debugging.
     printRunParameters(work_dir, sv_file, output_file, model_exist, model_file, ...
                        complex_model, weights, std_filter, len_filter, ...
                        bks_cluster, fdr_threshold, tier_std_cutoff, ...
                        num_breakpoints_per_bin, bin_length_value, chr_list, ...
-                       genome_build_value, random_seed);
+                       genome_build_value, random_seed, save_bin_index);
 
     global WorkDir
     WorkDir = work_dir;
@@ -127,12 +129,20 @@ function hits_table = run2DModel(varargin)
     end
 
     % Run model
-    hits_table = runSVsig(sv_file, model_exist, complex_model, weights, len_filter, bks_cluster, ...
-                          fdr_threshold, bin_length_value, num_breakpoints_per_bin, ...
-                          std_filter, model_file, tier_std_cutoff);
+    [hits_table, bins] = runSVsig(sv_file, model_exist, complex_model, weights, len_filter, bks_cluster, ...
+                                  fdr_threshold, bin_length_value, num_breakpoints_per_bin, ...
+                                  std_filter, model_file, tier_std_cutoff);
 
     % Write output table
     writetable(hits_table, output_file, 'delimiter', '\t');
+
+    % Optionally save bin indices to a sidecar file.
+    if save_bin_index
+        [out_dir, out_base, out_ext] = fileparts(output_file);
+        bin_index_file = fullfile(out_dir, [out_base, out_ext, '.bin_indices.txt']);
+        writetable(bins, bin_index_file, 'Delimiter', '\t');
+        fprintf('[run2DModel] bin indices written to: %s\n', bin_index_file);
+    end
 
 end
 
@@ -188,6 +198,8 @@ function cfg = parseCliArgs(args)
                 cfg.genome_build = char(value);
             case {'-seed', '--random_seed'}
                 cfg.random_seed = str2double(char(value));
+            case {'-bix', '--save_bin_index'}
+                cfg.save_bin_index = parseLogical(value);
             otherwise
                 error('run2DModel:BadCliArgs', 'Unknown flag: %s', key);
         end
@@ -280,6 +292,11 @@ function printHelp()
     fprintf('                                              default=<repo root inferred from run2DModel.m>\n');
     fprintf('  -seed, --random_seed               [int]    Optional RNG seed for reproducibility.\n');
     fprintf('                                              default=unset\n');
+    fprintf('  -bix, --save_bin_index             [bool]   Write a sidecar bin index file per shift alongside the output.\n');
+    fprintf('                                              Contains chr, start, and end for each unique bin in the\n');
+    fprintf('                                              final filtered output table for that shift.\n');
+    fprintf('                                              Filename: <output>.bin_indices.shift<N>bp<ext>.\n');
+    fprintf('                                              default=false\n');
     fprintf('  -h, --help                                  Show this help and exit.\n\n');
 end
 
@@ -295,7 +312,7 @@ function printRunParameters(work_dir, sv_file, output_file, model_exist, model_f
                             complex_model, weights, std_filter, len_filter, ...
                             bks_cluster, fdr_threshold, tier_std_cutoff, ...
                             num_breakpoints_per_bin, bin_length_value, chr_list, ...
-                            genome_build_value, random_seed)
+                            genome_build_value, random_seed, save_bin_index)
     fprintf('\n[run2DModel] effective parameters\n');
     fprintf('--work_dir=%s\n', work_dir);
     fprintf('--sv_file=%s\n', sv_file);
@@ -313,7 +330,8 @@ function printRunParameters(work_dir, sv_file, output_file, model_exist, model_f
     fprintf('--bin_length=%g\n', bin_length_value);
     fprintf('--chr_list=%s\n', chrListToText(chr_list));
     fprintf('--genome_build=%s\n', genome_build_value);
-    fprintf('--random_seed=%s\n\n', seedToText(random_seed));
+    fprintf('--random_seed=%s\n', seedToText(random_seed));
+    fprintf('--save_bin_index=%s\n\n', boolToText(save_bin_index));
 end
 
 function text = boolToText(tf)

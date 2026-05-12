@@ -1,5 +1,5 @@
 
-function[hits_table] = runSVsig(sv_file, model_exist, complex, weights, len_filter, bks_cluster, ...
+function [hits_table, bins] = runSVsig(sv_file, model_exist, complex, weights, len_filter, bks_cluster, ...
 FDR_THRESHOLD, bin_length, num_breakpoints_per_bin, std_filter, model_file, tier_std_cutoff)
 
 if nargin < 11 || isempty(model_file)
