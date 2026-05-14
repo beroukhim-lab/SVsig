@@ -4,6 +4,12 @@ if nargin < 6
   qFDR_mix = [];
 end
 
+if isempty(TbyGene_Table) || ...
+   (istable(TbyGene_Table) && height(TbyGene_Table) == 0)
+    error('annotate_hits_list:EmptyInput', ...
+        'TbyGene_Table is empty: no significant hits were found to annotate.');
+end
+
 if isstruct(TbyGene_Table)
 
     annotated_table=table();
