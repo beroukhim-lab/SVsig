@@ -117,7 +117,26 @@ hits_table.tile_qval = annotated_table.tile_qval;
 hits_table.pval = annotated_table.pval;
 hits_table.prob = annotated_table.p_mix;
 
-
+%add SV class (inter_chr, deletion, tandem_dup, inversion) based on strand and chromosome
+n = height(hits_table);
+cls = strings(n,1);
+%inter-chromosomal
+isInter = hits_table.chr_i ~= hits_table.chr_j;
+cls(isInter) = "inter_chr";
+%normalize strand values to "+" / "-"
+si = string(hits_table.strand_i);
+sj = string(hits_table.strand_j);
+si(si=="1" | si=="+1") = "+";
+si(si=="-1") = "-";
+sj(sj=="1" | sj=="+1") = "+";
+sj(sj=="-1") = "-";
+%intra-chromosomal
+intra = ~isInter;
+cls(intra & si=="+" & sj=="-") = "deletion";
+cls(intra & si=="-" & sj=="+") = "tandem_dup";
+cls(intra & si==sj)            = "inversion";
+cls(cls=="") = "unknown";  %if any weird encodings
+hits_table.class = cls;
 
 
 disp(strcat('the number of hits pre-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
