@@ -13,14 +13,17 @@ global bin_length
 
 EventsFile=sv_file;
 
-load(strcat(WorkDir,'/data/tracks/MiscVar')); % run gen_misc_var to update variables
+% load(strcat(WorkDir,'/data/tracks/MiscVar')); % run gen_misc_var to update variables
 fragile_track=importdata([WorkDir '/data/tracks/fragile_genes_smith.hg19fp.bed.txt']);
 %fragile_track=importdata([WorkDir 'data//tracks/HumCFS_hg38_lift_hg19.txt']);
 
 
 if genome_build == 'hg_38'
+    load(strcat(WorkDir,'/data/tracks/MiscVar_hg38'));
     fragile_track=importdata([WorkDir '/data/tracks/fragile_genes.hg38.txt']);
     chsize=importdata([WorkDir '/data/tracks/chsize_hg38.txt']);
+else 
+    load(strcat(WorkDir,'/data/tracks/MiscVar'));
 end
 
 % CHR = 1:23; % chromosomes to include in analysis
