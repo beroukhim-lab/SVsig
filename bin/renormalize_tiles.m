@@ -1,12 +1,12 @@
 %%%Function to renormalize tiles following event ratios. 
-%Used at the end of break_invasion_copy.m and double_break_join_model.m}
+%Used at the end of break_invasion_model.m and double_break_join_model.m}
 
 function [normalized_mat] = renormalize_tiles(mat_ratios, mat, events, bins, CHR)
 
 %ic ratio is ratio of inter:intra events
 %intra ratio is ratio of short:long events 
 
-annot_tiles=tiles_annot_copy('length',events,bins,CHR);
+annot_tiles=tiles_annot('length',events,bins,CHR);
 
  diag_short_ratio=(sum(sum(mat_ratios(annot_tiles(:,:,1)))))/(sum(sum(mat_ratios)));
  short_ratio=(sum(sum(mat_ratios(annot_tiles(:,:,2)))))/(sum(sum(mat_ratios)));

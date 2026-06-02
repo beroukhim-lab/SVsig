@@ -109,11 +109,11 @@ sij1dy = sij1dy./sum(sij1dy(1:end-1).*diff(sij1dx'));
 %sij1dx=repmat(0,100,1);
 
 % remove CP fragile as an option
-[sij,sij1dy] = ConditionalProbability_copy(events00,chsize,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx);  % 3D matrix with conditional probability per annotation
+[sij,sij1dy] = ConditionalProbability(events00,chsize,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx);  % 3D matrix with conditional probability per annotation
 
 
 mfull00=mfull{1}+mfull{2}+mfull{3}+mfull{4};
-annot_tiles1=tiles_annot_copy('length',events00,bins,CHR);
+annot_tiles1=tiles_annot('length',events00,bins,CHR);
     
 %normalize by event ratios
 [sij1]=renormalize_tiles(mfull00, sum(sij,3), events00, bins, CHR);

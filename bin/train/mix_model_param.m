@@ -13,7 +13,7 @@ global weights
 
 %logical: bins x bins x num_param
 %e.g. for short events param, denotes are the events in this tile short?
-annot_tiles=tiles_annot_copy('length',events,bins,CHR);
+annot_tiles=tiles_annot('length',events,bins,CHR);
 %annot_tiles=tiles_annot('length',events,bins,CHR);
 
 

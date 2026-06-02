@@ -44,7 +44,6 @@ bks_cluster=1;
 if ~bks_cluster
    if weights 
        %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom(mfull00, mix_model, [], []);
-       %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom_avgdist(mfull00, mix_model, [], [], bins, events00);
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull00, mix_model, [], [],1);
 
    else 
@@ -53,11 +52,7 @@ if ~bks_cluster
 
 else
     sij1dx = length_dist_1d_bins(events00,chsize,100);
-    %PValMH adjusts for clustered fragile sites within bins whereas PVal does not
-    %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull+mfull', mix_model, bins, events, sij1dx, chsize, CHR, 1, 0.1, 0);
-    %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist(mfull00, mix_model, bins, events00, 0);
-     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist_copy(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
 
 end
 
