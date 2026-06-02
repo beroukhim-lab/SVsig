@@ -56,7 +56,7 @@ else
     %PValMH adjusts for clustered fragile sites within bins whereas PVal does not
     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull+mfull', mix_model, bins, events, sij1dx, chsize, CHR, 1, 0.1, 0);
     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
-    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
+    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist(mfull00, mix_model, bins, events00, 0);
      %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist_copy(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
 
 end

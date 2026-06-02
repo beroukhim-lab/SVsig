@@ -108,34 +108,21 @@ sij1dy = sij1dy./sum(sij1dy(1:end-1).*diff(sij1dx'));
 
 %sij1dx=repmat(0,100,1);
 
-%no_annot indicates if CP_fragile or CP is to be used 
-%default is CP
-no_annot = 0; 
+% remove CP fragile as an option
+[sij,sij1dy] = ConditionalProbability_copy(events00,chsize,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx);  % 3D matrix with conditional probability per annotation
 
-if no_annot    
-    annot_array=event_annot(events00,TAD_track,fragile_track,gene_track,cancer_genes_track);
-    fragile_annot=12;
-    sij = ConditionalProbability_fragile(events00,annot_array(:,fragile_annot),bins_event_tble,chsize,bins,CHR,sij1dx);
+
+mfull00=mfull{1}+mfull{2}+mfull{3}+mfull{4};
+annot_tiles1=tiles_annot_copy('length',events00,bins,CHR);
     
-    [p, qe, qsolve] = q_solver_copy(R, sij, 1);
-    
-else
-    [sij,sij1dy] = ConditionalProbability_copy(events00,chsize,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx);  % 3D matrix with conditional probability per annotation
+%normalize by event ratios
+[sij1]=renormalize_tiles(mfull00, sum(sij,3), events00, bins, CHR);
 
-    
-    mfull00=mfull{1}+mfull{2}+mfull{3}+mfull{4};
-    annot_tiles1=tiles_annot_copy('length',events00,bins,CHR);
-     
-    %normalize by event ratios
-    [sij1]=renormalize_tiles(mfull00, sum(sij,3), events00, bins, CHR);
+[p, qe, qsolve] = q_solver(R, sij1, 1);
 
-    [p, qe, qsolve] = q_solver(R, sij1, 1);
-    
-    %normalize again by event ratios 
-    [p]=renormalize_tiles(mfull00, p,  events00, bins, CHR);
+%normalize again by event ratios 
+[p]=renormalize_tiles(mfull00, p,  events00, bins, CHR);
 
-    %make sure sum to 2
-    p = 2*p ./ sum(sum(p));
-
-end
+%make sure sum to 2
+p = 2*p ./ sum(sum(p));
 
