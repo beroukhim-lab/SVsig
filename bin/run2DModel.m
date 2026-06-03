@@ -80,12 +80,45 @@ function hits_table = run2DModel(varargin)
     bks_cluster = getOpt(cfg, 'bks_cluster', 1);
     fdr_threshold = getOpt(cfg, 'fdr_threshold', 0.1);
     tier_std_cutoff = getOpt(cfg, 'tier_std_cutoff', 42833.6);
+    low_density_threshold_value = getOpt(cfg, 'low_density_threshold', 5e-5);
+
+    % Track file paths (optional overrides; fall back to data/tracks/<genome_build>/)
+    ref_genes_file = getOpt(cfg, 'ref_genes_file', '');
+    cancer_genes_file = getOpt(cfg, 'cancer_genes_file', '');
+    curated_fusions_file = getOpt(cfg, 'curated_fusions_file', '');
+    chrom_sizes_file = getOpt(cfg, 'chrom_sizes_file', '');
+    blacklist_file = getOpt(cfg, 'blacklist_file', '');
+    l1_elements_file = getOpt(cfg, 'l1_elements_file', '');
 
     % Binning and genome settings
     num_breakpoints_per_bin = getOpt(cfg, 'num_breakpoints_per_bin', 100);
     bin_length_value = getOpt(cfg, 'bin_length', 5e5);
     chr_list = getOpt(cfg, 'chr_list', 1:23);
     genome_build_value = getOpt(cfg, 'genome_build', 'hg_19');
+
+    % Resolve track file paths: user overrides fall back to data/tracks/<genome_build>/
+    user_track_overrides = struct( ...
+        'ref_genes_file', ref_genes_file, ...
+        'cancer_genes_file', cancer_genes_file, ...
+        'curated_fusions_file', curated_fusions_file, ...
+        'chrom_sizes_file', chrom_sizes_file, ...
+        'blacklist_file', blacklist_file, ...
+        'l1_elements_file', l1_elements_file);
+    resolved_tracks = resolve_track_paths(work_dir, genome_build_value, user_track_overrides);
+    fprintf('[run2DModel] resolved track files:
+');
+    fprintf('  ref_genes_file=%s
+', resolved_tracks.ref_genes_file);
+    fprintf('  cancer_genes_file=%s
+', resolved_tracks.cancer_genes_file);
+    fprintf('  curated_fusions_file=%s
+', resolved_tracks.curated_fusions_file);
+    fprintf('  chrom_sizes_file=%s
+', resolved_tracks.chrom_sizes_file);
+    fprintf('  blacklist_file=%s
+', resolved_tracks.blacklist_file);
+    fprintf('  l1_elements_file=%s
+', resolved_tracks.l1_elements_file);
 
     % Optionally set a fixed random seed for reproducibility.
     random_seed = getOpt(cfg, 'random_seed', []);
@@ -100,7 +133,8 @@ function hits_table = run2DModel(varargin)
                        complex_model, weights, std_filter, len_filter, ...
                        bks_cluster, fdr_threshold, tier_std_cutoff, ...
                        num_breakpoints_per_bin, bin_length_value, chr_list, ...
-                       genome_build_value, random_seed, save_bin_index);
+                       genome_build_value, random_seed, save_bin_index, ...
+                       low_density_threshold_value, resolved_tracks);
 
     global WorkDir
     WorkDir = work_dir;
@@ -111,6 +145,9 @@ function hits_table = run2DModel(varargin)
     global FDR_THRESHOLD
     FDR_THRESHOLD = fdr_threshold;
 
+    global LOW_DENSITY_THRESHOLD
+    LOW_DENSITY_THRESHOLD = low_density_threshold_value;
+
     global CHR
     CHR = chr_list;
 
@@ -119,6 +156,10 @@ function hits_table = run2DModel(varargin)
 
     global bin_length
     bin_length = bin_length_value;
+
+    % Set globals for track files so break_invasion_model can access them
+    global TRACK_PATHS
+    TRACK_PATHS = resolved_tracks;
 
     addpath(genpath(work_dir));
 
@@ -182,6 +223,8 @@ function cfg = parseCliArgs(args)
                 cfg.std_filter = str2double(char(value));
             case {'-tier', '--tier_std_cutoff'}
                 cfg.tier_std_cutoff = str2double(char(value));
+            case {'-ldt', '--low_density_threshold'}
+                cfg.low_density_threshold = str2double(char(value));
             case {'-len', '--len_filter'}
                 cfg.len_filter = str2double(char(value));
             case {'-bks', '--bks_cluster'}
@@ -200,6 +243,18 @@ function cfg = parseCliArgs(args)
                 cfg.random_seed = str2double(char(value));
             case {'-bix', '--save_bin_index'}
                 cfg.save_bin_index = parseLogical(value);
+            case {'-ref_genes', '--ref_genes_file'}
+                cfg.ref_genes_file = char(value);
+            case {'-cancer_genes', '--cancer_genes_file'}
+                cfg.cancer_genes_file = char(value);
+            case {'-curated_fusions', '--curated_fusions_file'}
+                cfg.curated_fusions_file = char(value);
+            case {'-chrom_sizes', '--chrom_sizes_file'}
+                cfg.chrom_sizes_file = char(value);
+            case {'-blacklist', '--blacklist_file'}
+                cfg.blacklist_file = char(value);
+            case {'-l1', '--l1_elements_file'}
+                cfg.l1_elements_file = char(value);
             otherwise
                 error('run2DModel:BadCliArgs', 'Unknown flag: %s', key);
         end
@@ -225,7 +280,13 @@ function tf = parseLogical(value)
 end
 
 function chr_list = parseChrList(value)
-    % Accept either "1:23" or comma-separated values like "1,2,3,23".
+    % Accept numeric chromosome specifications only:
+    %   1:23 (range form)
+    %   1:24 (range form, optional)
+    %   1,2,3,23 (comma-separated form)
+    % All values must be integers in [1, 24].
+    value = strrep(value, ' ', '');
+    
     if contains(value, ':')
         parts = split(value, ':');
         if numel(parts) ~= 2
@@ -233,17 +294,21 @@ function chr_list = parseChrList(value)
         end
         start_v = str2double(parts{1});
         end_v = str2double(parts{2});
+        if isnan(start_v) || isnan(end_v) || start_v < 1 || end_v > 24 || ...
+           floor(start_v) ~= start_v || floor(end_v) ~= end_v || start_v > end_v
+            error('run2DModel:BadCliArgs', 'Invalid chr_list value: %s', value);
+        end
         chr_list = start_v:end_v;
     else
         parts = split(value, ',');
         chr_list = zeros(1, numel(parts));
         for k = 1:numel(parts)
-            chr_list(k) = str2double(parts{k});
+            chr_num = str2double(parts{k});
+            if isnan(chr_num) || chr_num < 1 || chr_num > 24 || floor(chr_num) ~= chr_num
+                error('run2DModel:BadCliArgs', 'Invalid chr_list value: %s', value);
+            end
+            chr_list(k) = chr_num;
         end
-    end
-
-    if any(isnan(chr_list))
-        error('run2DModel:BadCliArgs', 'Invalid chr_list value: %s', value);
     end
 end
 
@@ -282,9 +347,20 @@ function printHelp()
     fprintf('                                              default=0.1\n');
     fprintf('  -tier, --tier_std_cutoff           [num]    Cutoff used to assign output tier1/2/3 from stddev_i and stddev_j.\n');
     fprintf('                                              default=42833.6\n\n');
+    fprintf('  -ldt, --low_density_threshold      [num]    Threshold used to remove low-density bins.\n');
+    fprintf('                                              default=5e-5\n\n');
+
+    fprintf('Track Files (optional; fall back to data/tracks/<genome_build>/):\n');
+    fprintf('  -ref_genes, --ref_genes_file       [path]   Reference genes file (default: ref_genes.txt.gz)\n');
+    fprintf('  -cancer_genes, --cancer_genes_file [path]   Cancer genes file (default: cancer_genes.tsv)\n');
+    fprintf('  -curated_fusions, --curated_fusions_file [path]   Curated fusions file (default: curated_fusions.tsv)\n');
+    fprintf('  -chrom_sizes, --chrom_sizes_file   [path]   Chromosome sizes file (default: chrom.sizes)\n');
+    fprintf('  -blacklist, --blacklist_file       [path]   Blacklist regions file (default: blacklist.bed)\n');
+    fprintf('  -l1, --l1_elements_file            [path]   L1 elements file (default: l1_elements.bed)\n\n');
 
     fprintf('Genome and Runtime:\n');
     fprintf('  -chr, --chr_list                   [list]   Chromosomes included in model building and testing.\n');
+    fprintf('                                              Accepts numeric form: 1:23, 1:24, or 1,2,3,...,23\n');
     fprintf('                                              default=1:23\n');
     fprintf('  -genome, --genome_build            [text]   Genome build used by downstream annotation.\n');
     fprintf('                                              default=hg_19\n');
@@ -312,7 +388,8 @@ function printRunParameters(work_dir, sv_file, output_file, model_exist, model_f
                             complex_model, weights, std_filter, len_filter, ...
                             bks_cluster, fdr_threshold, tier_std_cutoff, ...
                             num_breakpoints_per_bin, bin_length_value, chr_list, ...
-                            genome_build_value, random_seed, save_bin_index)
+                            genome_build_value, random_seed, save_bin_index, ...
+                            low_density_threshold_value, resolved_tracks)
     fprintf('\n[run2DModel] effective parameters\n');
     fprintf('--work_dir=%s\n', work_dir);
     fprintf('--sv_file=%s\n', sv_file);
@@ -326,12 +403,20 @@ function printRunParameters(work_dir, sv_file, output_file, model_exist, model_f
     fprintf('--bks_cluster=%g\n', bks_cluster);
     fprintf('--fdr_threshold=%g\n', fdr_threshold);
     fprintf('--tier_std_cutoff=%g\n', tier_std_cutoff);
+    fprintf('--low_density_threshold=%g\n', low_density_threshold_value);
     fprintf('--num_breakpoints_per_bin=%g\n', num_breakpoints_per_bin);
     fprintf('--bin_length=%g\n', bin_length_value);
     fprintf('--chr_list=%s\n', chrListToText(chr_list));
     fprintf('--genome_build=%s\n', genome_build_value);
     fprintf('--random_seed=%s\n', seedToText(random_seed));
-    fprintf('--save_bin_index=%s\n\n', boolToText(save_bin_index));
+    fprintf('--save_bin_index=%s\n', boolToText(save_bin_index));
+    fprintf('--resolved track files:\n');
+    fprintf('  ref_genes_file=%s\n', emptyToNA(resolved_tracks.ref_genes_file));
+    fprintf('  cancer_genes_file=%s\n', emptyToNA(resolved_tracks.cancer_genes_file));
+    fprintf('  curated_fusions_file=%s\n', emptyToNA(resolved_tracks.curated_fusions_file));
+    fprintf('  chrom_sizes_file=%s\n', emptyToNA(resolved_tracks.chrom_sizes_file));
+    fprintf('  blacklist_file=%s\n', emptyToNA(resolved_tracks.blacklist_file));
+    fprintf('  l1_elements_file=%s\n\n', emptyToNA(resolved_tracks.l1_elements_file));
 end
 
 function text = boolToText(tf)

@@ -1,4 +1,4 @@
-function [hitstable,hitstable_lookup] = HitsTableCV(mfull,pa, pval_tophits, bins_event_tble, qFDR, events, refgene_tble)
+function [hitstable,hitstable_lookup] = HitsTableCV(mfull,pa, pval_tophits, bins_event_tble, qFDR, events, refgene_lookup)
 
 gene_pad_neg = 1e4;
 gene_pad_pos = 1e4;
@@ -42,8 +42,8 @@ for c1=1:length(pval_tophits),2;
     hitstable(ct,9)=bin_event_matrix(event_loc(c2),5); %pos i
     hitstable(ct,10)=bin_event_matrix(event_loc(c2),7); %chr j
     hitstable(ct,11)=bin_event_matrix(event_loc(c2),8); %pos j    
-    hitstable(ct,12)=getlocusid(hitstable(ct,8),hitstable(ct,9),refgene_tble,gene_pad_neg,gene_pad_pos); %locus_id i
-    hitstable(ct,13)=getlocusid(hitstable(ct,10),hitstable(ct,11),refgene_tble,gene_pad_neg,gene_pad_pos); %locus_id j
+    hitstable(ct,12)=getlocusid(hitstable(ct,8),hitstable(ct,9),refgene_lookup,gene_pad_neg,gene_pad_pos); %locus_id i
+    hitstable(ct,13)=getlocusid(hitstable(ct,10),hitstable(ct,11),refgene_lookup,gene_pad_neg,gene_pad_pos); %locus_id j
     hitstable(ct,14)=bin_event_matrix(event_loc(c2),6); %strand i
     hitstable(ct,15)=bin_event_matrix(event_loc(c2),9); %strand j
     hitstable(ct,16)=bin_event_matrix(event_loc(c2),10); %tumor type

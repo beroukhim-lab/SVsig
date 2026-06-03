@@ -1,4 +1,4 @@
-function [gene_i, gene_j] = known_cancer_genes_annot(gene_i, gene_j, uFusionTable, CosmicCencus)
+function [gene_i, gene_j] = known_cancer_genes_annot(gene_i, gene_j, curated_fusion_pairs, cancer_gene_symbols)
 
 len_i=length(gene_i);
 len_j=length(gene_j);
@@ -23,14 +23,14 @@ if len_i>0 && len_j>0
     
     for c1=1:len_i,
         for c2=1:len_j,
-            if sum(strcmp(gene_i0(c1),uFusionTable(:,1))&strcmp(gene_j0(c2),uFusionTable(:,2)))>0
+            if sum(strcmp(gene_i0(c1),curated_fusion_pairs(:,1))&strcmp(gene_j0(c2),curated_fusion_pairs(:,2)))>0
                 known_genes_i(c1,1)=1;
                 known_genes_j(c2,1)=1;
-            elseif sum(strcmp(gene_i0(c1),CosmicCencus(:,1)))>0 || sum(strcmp(gene_j0(c2),CosmicCencus(:,1)))>0
-                if sum(strcmp(gene_i0(c1),CosmicCencus(:,1)))>0
+            elseif sum(strcmp(gene_i0(c1),cancer_gene_symbols(:,1)))>0 || sum(strcmp(gene_j0(c2),cancer_gene_symbols(:,1)))>0
+                if sum(strcmp(gene_i0(c1),cancer_gene_symbols(:,1)))>0
                     known_genes_i(c1,2)=1;
                 end
-                if sum(strcmp(gene_j0(c2),CosmicCencus(:,1)))>0 
+                if sum(strcmp(gene_j0(c2),cancer_gene_symbols(:,1)))>0 
                     known_genes_j(c1,2)=1;
                 end
             end

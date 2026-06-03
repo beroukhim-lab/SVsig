@@ -4,12 +4,17 @@ function [bins0, events0, numbins] = remove_low_density_bins(bins0,events0)
 % density represents the number of events per base pair in a particular bin
 %density takes into account the variable bin size, otherwise if the bins
 %were the same size you could just set a threshold for removing bins that have less than a certain number of events
+global LOW_DENSITY_THRESHOLD
 
 
 %[sorted_desnity,idx]=sort(bins0(:,4)./(bins0(:,3)-bins0(:,2)));
 %th=5e-5;
 %20220628 original threshold is 5e-5
-th=5e-5;
+if isempty(LOW_DENSITY_THRESHOLD) || ~isfinite(LOW_DENSITY_THRESHOLD) || LOW_DENSITY_THRESHOLD <= 0
+    th=5e-5;
+else
+    th=LOW_DENSITY_THRESHOLD;
+end
 %th=5e-6;
 
 %bins columns: 1 is for the chromosome, 2 is the start position, 3 is the

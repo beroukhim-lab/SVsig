@@ -1,4 +1,4 @@
-function TbyGene=TophitsByGenes(hitstable,hitstable_lookup,pos_pad,bins,refgene,refgene_tble,UTumor,CosmicCencus,uFusionTable,bins_annot)
+function TbyGene=TophitsByGenes(hitstable,hitstable_lookup,pos_pad,bins,refgene,refgene_lookup,UTumor,cancer_gene_symbols,curated_fusion_pairs,bins_annot)
 
 bin_size_th=2e6;
 %max_num_gene=2; % max number of genes to list per tile
@@ -58,7 +58,7 @@ while sum(counted_bins)>0,
     gene_i_pos=[]; gene_j_pos=[];
     %if numel(clines)>0
          range(Tc,1:3)=[hitstable(clines(1),8) min(hitstable(clines,9)) max(hitstable(clines,9))];    
-        [gene_i,gene_i_pos]=get_gene_list(range(Tc,1:3),refgene_tble,refgene,pos_pad,pos_pad);
+        [gene_i,gene_i_pos]=get_gene_list(range(Tc,1:3),refgene_lookup,refgene,pos_pad,pos_pad);
         [gene_locus, gene_i_pos0]=gene_locus_search(range(Tc,1:3),pos_pad,pos_pad);
         if ~isempty(gene_locus),
             gene_i=gene_locus;
@@ -71,7 +71,7 @@ while sum(counted_bins)>0,
     %if numel(clines)>0
            range(Tc,4:6)=[hitstable(clines(1),10) min(hitstable(clines,11)) max(hitstable(clines,11))];  
 
-        [gene_j,gene_j_pos]=get_gene_list(range(Tc,4:6),refgene_tble,refgene,pos_pad,pos_pad);
+        [gene_j,gene_j_pos]=get_gene_list(range(Tc,4:6),refgene_lookup,refgene,pos_pad,pos_pad);
         [gene_locus, gene_j_pos0]=gene_locus_search(range(Tc,4:6),pos_pad,pos_pad);
         if ~isempty(gene_locus),
             gene_j=gene_locus;
@@ -105,7 +105,7 @@ while sum(counted_bins)>0,
         end
     end
 
-    [gene_i, gene_j] = known_cancer_genes_annot(gene_i, gene_j, uFusionTable, CosmicCencus);
+    [gene_i, gene_j] = known_cancer_genes_annot(gene_i, gene_j, curated_fusion_pairs, cancer_gene_symbols);
 
     %Antonia: Move genes with asterisks to the front of the list
     prioritize = endsWith(string(gene_i), "*");
@@ -145,14 +145,14 @@ while sum(counted_bins)>0,
 %     known_genes_j=zeros(length(TbyGene(Tc).gene_j),2);
 %     for c1=1:length(TbyGene(Tc).gene_i),
 %         for c2=1:length(TbyGene(Tc).gene_j),
-%             if (sum(strcmp(TbyGene(Tc).gene_i(c1),uFusionTable(:,1)))>0&sum(strcmp(TbyGene(Tc).gene_j(c2),uFusionTable(:,2)))>0)||(sum(strcmp(TbyGene(Tc).gene_j(c2),uFusionTable(:,1)))>0&sum(strcmp(TbyGene(Tc).gene_i(c1),uFusionTable(:,2)))>0)
+%             if (sum(strcmp(TbyGene(Tc).gene_i(c1),curated_fusion_pairs(:,1)))>0&sum(strcmp(TbyGene(Tc).gene_j(c2),curated_fusion_pairs(:,2)))>0)||(sum(strcmp(TbyGene(Tc).gene_j(c2),curated_fusion_pairs(:,1)))>0&sum(strcmp(TbyGene(Tc).gene_i(c1),curated_fusion_pairs(:,2)))>0)
 %                 known_genes_i(c1,1)=1;
 %                 known_genes_j(c2,1)=1;
-%             elseif sum(strcmp(TbyGene(Tc).gene_i(c1),CosmicCencus(:,1)))>0 || sum(strcmp(TbyGene(Tc).gene_j(c2),CosmicCencus(:,1)))>0
-%                 if sum(strcmp(TbyGene(Tc).gene_i(c1),CosmicCencus(:,1)))>0
+%             elseif sum(strcmp(TbyGene(Tc).gene_i(c1),cancer_gene_symbols(:,1)))>0 || sum(strcmp(TbyGene(Tc).gene_j(c2),cancer_gene_symbols(:,1)))>0
+%                 if sum(strcmp(TbyGene(Tc).gene_i(c1),cancer_gene_symbols(:,1)))>0
 %                     known_genes_i(c1,2)=1;
 %                 end
-%                 if sum(strcmp(TbyGene(Tc).gene_j(c2),CosmicCencus(:,1)))>0 
+%                 if sum(strcmp(TbyGene(Tc).gene_j(c2),cancer_gene_symbols(:,1)))>0 
 %                     known_genes_i(c1,2)=1;
 %                 end
 %             end

@@ -29,8 +29,7 @@ for c1=1:length(list_prim),
     if ~isempty(refgene_loc)
         rg_symbol(c1)={refgene.rg(refgene_loc(1)).symb};
         pos(c1,1)=min([refgene.rg(refgene_loc).start]);
-        % 2026/05/28: update to use xEnd instead of end, to use MiscVar_hg38
-        pos(c1,2)=max([refgene.rg(refgene_loc).xEnd]);
+        pos(c1,2)=max([refgene.rg(refgene_loc).end]);
     else
         rg_symbol(c1)={};
         pos(c1)=[];
@@ -42,7 +41,7 @@ for c1=length(list_prim)+1:length(list_prim)+length(list_sec),
     if ~isempty(refgene_loc)
         rg_symbol(c1)={strcat('(',refgene.rg(refgene_loc(1)).symb,')')};
         pos(c1,1)=min([refgene.rg(refgene_loc).start]);
-        pos(c1,2)=max([refgene.rg(refgene_loc).xEnd]);
+        pos(c1,2)=max([refgene.rg(refgene_loc).end]);
     else
         rg_symbol(c1)={};
         pos(c1)=[];

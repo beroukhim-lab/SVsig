@@ -1,6 +1,16 @@
 
 function [hits_table, bins] = runSVsig(sv_file, model_exist, complex, weights, len_filter, bks_cluster, ...
 FDR_THRESHOLD, bin_length, num_breakpoints_per_bin, std_filter, model_file, tier_std_cutoff)
+global cancer_gene_symbols
+global curated_fusion_pairs
+global chromosome_sizes
+global refgene
+global refgene_lookup
+global events00
+global bins
+global bins_event_tble
+global mfull00
+global mix_model
 
 if nargin < 11 || isempty(model_file)
     model_file = '';
@@ -51,7 +61,7 @@ if ~bks_cluster
    end 
 
 else
-    sij1dx = length_dist_1d_bins(events00,chsize,100);
+    sij1dx = length_dist_1d_bins(events00,chromosome_sizes,100);
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist(mfull00, mix_model, bins, events00, 0);
 
 end
@@ -63,12 +73,11 @@ end
 %hits and such 
 %wait jk TophistByGenes doe sthat check HitsTableCV later 
 
-[hitstable_mix,hitstable_mix_lookup] = HitsTableCV(mfull_pval_mix,pa_mix, pval_tophits_mix, bins_event_tble, qFDR_mix, events00, refgene_tble);
+[hitstable_mix,hitstable_mix_lookup] = HitsTableCV(mfull_pval_mix,pa_mix, pval_tophits_mix, bins_event_tble, qFDR_mix, events00, refgene_lookup);
 
 disp ('done with HitsTableCV')
 
-CuratedFusionGene0=CuratedFusionGene(1:end-3,:);
-TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene,refgene_tble, [] ,CosmicCencus,CuratedFusionGene0,[]);
+TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene,refgene_lookup, [] ,cancer_gene_symbols,curated_fusion_pairs,[]);
 
 
 
