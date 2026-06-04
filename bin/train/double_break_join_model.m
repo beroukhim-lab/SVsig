@@ -2,12 +2,13 @@
 global firstbin
 global lastbin
 global intra_chr_a
+global chromosome_sizes
 
 
 
 nume=length(events00);
 
-[sij1dy_l,opt1dy0_l,fval0_l,lij,intra_chr_l] = Lijoptim_to_length(events00,chsize,bins,CHR,R,mfull{1}+mfull{2}+mfull{3}+mfull{4},sij1dx);
+[sij1dy_l,opt1dy0_l,fval0_l,lij,intra_chr_l] = Lijoptim_to_length(events00,chromosome_sizes,bins,CHR,R,mfull{1}+mfull{2}+mfull{3}+mfull{4},sij1dx);
 
 
 %normalize lij by event ratios 

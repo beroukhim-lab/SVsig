@@ -14,14 +14,17 @@ function tracks = load_track_files(resolved_track_paths, genome_build)
     %       chromosome_sizes (vector), blacklist_regions (matrix), l1_elements (matrix)
     
     fprintf('[load_track_files] Loading track files for %s\n', genome_build);
+
+    allowed_chr_nums = resolve_allowed_chr_list();
+    fprintf('[load_track_files] Using selected chromosomes: %s\n', chrListToText(allowed_chr_nums));
     
     % Load chromosome sizes first (needed for other parsers)
-    tracks.chromosome_sizes = load_chrom_sizes(resolved_track_paths.chrom_sizes_file, genome_build);
+    tracks.chromosome_sizes = load_chrom_sizes(resolved_track_paths.chrom_sizes_file, genome_build, allowed_chr_nums);
     fprintf('[load_track_files] Loaded chrom.sizes: %d chromosomes\n', numel(tracks.chromosome_sizes));
     
     % Load reference genes (creates both refgene struct and refgene_lookup)
-    [tracks.refgene, tracks.refgene_lookup] = load_ref_genes(resolved_track_paths.ref_genes_file, tracks.chromosome_sizes, genome_build);
-    fprintf('[load_track_files] Loaded reference genes: %d entries\n', length(tracks.refgene));
+    [tracks.refgene, tracks.refgene_lookup] = load_ref_genes(resolved_track_paths.ref_genes_file, tracks.chromosome_sizes, genome_build, allowed_chr_nums);
+    fprintf('[load_track_files] Loaded reference genes: %d entries\n', numel(tracks.refgene.rg));
     
     % Load cancer genes (simple list)
     tracks.cancer_gene_symbols = load_cancer_genes(resolved_track_paths.cancer_genes_file);
@@ -32,16 +35,16 @@ function tracks = load_track_files(resolved_track_paths, genome_build)
     fprintf('[load_track_files] Loaded curated fusions: %d pairs\n', size(tracks.curated_fusion_pairs, 1));
     
     % Load blacklist regions
-    tracks.blacklist_regions = load_bed_file(resolved_track_paths.blacklist_file, tracks.chromosome_sizes, genome_build);
+    tracks.blacklist_regions = load_bed_file(resolved_track_paths.blacklist_file, tracks.chromosome_sizes, genome_build, allowed_chr_nums);
     fprintf('[load_track_files] Loaded blacklist regions: %d entries\n', size(tracks.blacklist_regions, 1));
     
     % Load L1 elements
-    tracks.l1_elements = load_bed_file(resolved_track_paths.l1_elements_file, tracks.chromosome_sizes, genome_build);
+    tracks.l1_elements = load_bed_file(resolved_track_paths.l1_elements_file, tracks.chromosome_sizes, genome_build, allowed_chr_nums);
     fprintf('[load_track_files] Loaded L1 elements: %d entries\n', size(tracks.l1_elements, 1));
     
 end
 
-function chsize = load_chrom_sizes(chrom_sizes_file, genome_build)
+function chsize = load_chrom_sizes(chrom_sizes_file, genome_build, allowed_chr_nums)
     % Load chromosome sizes and map to numeric vector [1..24].
     % Preferred columns are chr and size; headerless two-column files are also accepted.
     
@@ -53,11 +56,11 @@ function chsize = load_chrom_sizes(chrom_sizes_file, genome_build)
     dropped_rows = 0;
     
     for i = 1:height(data)
-        chr_name = data.chr{i};
-        size_val = data.size(i);
+        chr_name = table_text_value(data, i, 1);
+        size_val = table_numeric_value(data, i, 2);
         
-        chr_num = parse_chr_name(chr_name);
-        if is_canonical_chr_num(chr_num)
+        chr_num = normalize_chr_to_num(chr_name, allowed_chr_nums);
+        if chr_num > 0
             chsize(chr_num) = size_val;
         else
             dropped_rows = dropped_rows + 1;
@@ -65,11 +68,11 @@ function chsize = load_chrom_sizes(chrom_sizes_file, genome_build)
     end
 
     if dropped_rows > 0
-        fprintf('[load_track_files] Ignored %d noncanonical rows in chrom_sizes_file\n', dropped_rows);
+        fprintf('[load_track_files] Ignored %d noncanonical/excluded rows in chrom_sizes_file\n', dropped_rows);
     end
 end
 
-function [refgene, refgene_lookup] = load_ref_genes(ref_genes_file, chromosome_sizes, genome_build)
+function [refgene, refgene_lookup] = load_ref_genes(ref_genes_file, chromosome_sizes, genome_build, allowed_chr_nums)
     % Load reference genes using canonical genomic coordinates.
     % Required logical columns are:
     %   chr: chromosome name (aliases: chrom, chromosome)
@@ -95,13 +98,13 @@ function [refgene, refgene_lookup] = load_ref_genes(ref_genes_file, chromosome_s
     dropped_rows = 0;
     
     for i = 1:n
-        chr_name = data{i, chr_col}{1};
-        chr_num = parse_chr_name(chr_name);
-        start_pos = data{i, start_col};
-        end_pos = data{i, end_col};
-        symbol = data{i, gene_symbol_col}{1};
+        chr_name = table_text_value(data, i, chr_col);
+        chr_num = normalize_chr_to_num(chr_name, allowed_chr_nums);
+        start_pos = table_numeric_value(data, i, start_col);
+        end_pos = table_numeric_value(data, i, end_col);
+        symbol = table_text_value(data, i, gene_symbol_col);
         
-        if is_canonical_chr_num(chr_num)
+        if chr_num > 0
             locus_idx = locus_idx + 1;
             rg_list = [rg_list; struct('locus_id', locus_idx, 'symb', symbol, ...
                                        'start', start_pos, 'end', end_pos)];
@@ -115,7 +118,7 @@ function [refgene, refgene_lookup] = load_ref_genes(ref_genes_file, chromosome_s
     refgene.rg = rg_list;
 
     if dropped_rows > 0
-        fprintf('[load_track_files] Ignored %d noncanonical rows in ref_genes_file\n', dropped_rows);
+        fprintf('[load_track_files] Ignored %d noncanonical/excluded rows in ref_genes_file\n', dropped_rows);
     end
 end
 
@@ -160,7 +163,7 @@ function curated_fusions = load_curated_fusions(curated_fusions_file)
                        table2cell(data(:, gene_b_col))];
 end
 
-function bed_matrix = load_bed_file(bed_file, chsize, genome_build)
+function bed_matrix = load_bed_file(bed_file, chsize, genome_build, allowed_chr_nums)
     % Load a BED3-style file with canonical columns chr, start, end.
     % BED format is 0-based, half-open [start, end). Headerless files are also accepted.
     
@@ -171,12 +174,12 @@ function bed_matrix = load_bed_file(bed_file, chsize, genome_build)
     bed_matrix = [];
     dropped_rows = 0;
     for i = 1:height(data)
-        chr_name = data.chr{i};
-        chr_num = parse_chr_name(chr_name);
-        start_pos = data.start(i);
-        end_pos = data.end(i);
+        chr_name = table_text_value(data, i, 1);
+        chr_num = normalize_chr_to_num(chr_name, allowed_chr_nums);
+        start_pos = table_numeric_value(data, i, 2);
+        end_pos = table_numeric_value(data, i, 3);
         
-        if is_canonical_chr_num(chr_num)
+        if chr_num > 0
             bed_matrix = [bed_matrix; chr_num, start_pos, end_pos];
         else
             dropped_rows = dropped_rows + 1;
@@ -184,7 +187,17 @@ function bed_matrix = load_bed_file(bed_file, chsize, genome_build)
     end
 
     if dropped_rows > 0
-        fprintf('[load_track_files] Ignored %d noncanonical rows in %s\n', dropped_rows, bed_file);
+        fprintf('[load_track_files] Ignored %d noncanonical/excluded rows in %s\n', dropped_rows, bed_file);
+    end
+end
+
+function chr_num = normalize_chr_to_num(chr_name, allowed_chr_nums)
+    % Normalize chromosome naming variants to canonical numeric indices.
+    % Accepts chr1-22/X/Y and 1-22/X/Y forms; returns -1 for noncanonical
+    % or chromosomes excluded by allowed_chr_nums.
+    chr_num = parse_chr_name(chr_name);
+    if ~(is_canonical_chr_num(chr_num) && ismember(chr_num, allowed_chr_nums))
+        chr_num = -1;
     end
 end
 
@@ -215,6 +228,40 @@ end
 
 function tf = is_canonical_chr_num(chr_num)
     tf = ~isnan(chr_num) && chr_num >= 1 && chr_num <= 24 && floor(chr_num) == chr_num;
+end
+
+function allowed_chr_nums = resolve_allowed_chr_list()
+    % Respect global CHR when available; otherwise default to canonical 1:24.
+    global CHR
+
+    if isempty(CHR)
+        allowed_chr_nums = 1:24;
+        return;
+    end
+
+    allowed_chr_nums = CHR(:)';
+    allowed_chr_nums = allowed_chr_nums(isfinite(allowed_chr_nums));
+    allowed_chr_nums = allowed_chr_nums(floor(allowed_chr_nums) == allowed_chr_nums);
+    allowed_chr_nums = allowed_chr_nums(allowed_chr_nums >= 1 & allowed_chr_nums <= 24);
+    allowed_chr_nums = unique(allowed_chr_nums, 'stable');
+
+    if isempty(allowed_chr_nums)
+        allowed_chr_nums = 1:24;
+    end
+end
+
+function text = chrListToText(chr_list)
+    if isempty(chr_list)
+        text = 'NA';
+        return;
+    end
+
+    if isvector(chr_list) && numel(chr_list) > 1 && all(diff(chr_list) == 1)
+        text = sprintf('%g:%g', chr_list(1), chr_list(end));
+    else
+        text = sprintf('%g,', chr_list);
+        text = text(1:end-1);
+    end
 end
 
 function col_idx = find_column_by_alias(tbl, aliases)
@@ -252,7 +299,13 @@ function data = read_chr_size_table(file_path)
         data.Properties.VariableNames = {'chr', 'size'};
     else
         data = readtable(file_path, 'FileType', 'text', 'Delimiter', '\t', ...
-                         'VariableNames', {'chr', 'size'}, 'ReadVariableNames', false);
+                         'ReadVariableNames', false);
+        if width(data) < 2
+            error('load_track_files:BadFormat', ...
+                  'chrom_sizes_file must have at least 2 columns: %s', file_path);
+        end
+        data = data(:, 1:2);
+        data.Properties.VariableNames = {'chr', 'size'};
     end
 end
 
@@ -267,8 +320,53 @@ function data = read_bed_table(file_path)
         data.Properties.VariableNames = {'chr', 'start', 'end'};
     else
         data = readtable(file_path, 'FileType', 'text', 'Delimiter', '\t', ...
-                         'VariableNames', {'chr', 'start', 'end'}, ...
                          'ReadVariableNames', false, 'HeaderLines', 0);
+        if width(data) < 3
+            error('load_track_files:BadFormat', ...
+                  'BED file must have at least 3 columns (chr,start,end): %s', file_path);
+        end
+        data = data(:, 1:3);
+        data.Properties.VariableNames = {'chr', 'start', 'end'};
+    end
+end
+
+function value = table_text_value(tbl, row_idx, col_idx)
+    raw = tbl{row_idx, col_idx};
+
+    if iscell(raw)
+        raw = raw{1};
+    end
+
+    if iscategorical(raw)
+        raw = string(raw);
+    end
+
+    if isstring(raw)
+        value = char(raw(1));
+    elseif ischar(raw)
+        value = raw;
+    elseif isnumeric(raw) || islogical(raw)
+        value = char(string(raw(1)));
+    else
+        value = char(string(raw));
+    end
+end
+
+function value = table_numeric_value(tbl, row_idx, col_idx)
+    raw = tbl{row_idx, col_idx};
+
+    if iscell(raw)
+        raw = raw{1};
+    end
+
+    if iscategorical(raw)
+        raw = string(raw);
+    end
+
+    if isstring(raw) || ischar(raw)
+        value = str2double(string(raw));
+    else
+        value = double(raw(1));
     end
 end
 

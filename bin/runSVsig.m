@@ -1,5 +1,5 @@
 
-function [hits_table, bins] = runSVsig(sv_file, model_exist, complex, weights, len_filter, bks_cluster, ...
+function [hits_table, bins] = runSVsig(sv_file, model_exist, complex, weights, len_filter, ...
 FDR_THRESHOLD, bin_length, num_breakpoints_per_bin, std_filter, model_file, tier_std_cutoff)
 global cancer_gene_symbols
 global curated_fusion_pairs
@@ -12,10 +12,10 @@ global bins_event_tble
 global mfull00
 global mix_model
 
-if nargin < 11 || isempty(model_file)
+if nargin < 10 || isempty(model_file)
     model_file = '';
 end
-if nargin < 12 || isempty(tier_std_cutoff)
+if nargin < 11 || isempty(tier_std_cutoff)
     tier_std_cutoff = 38491;
 end
  
@@ -50,20 +50,11 @@ else
 end
 
 
-bks_cluster=1;
-if ~bks_cluster
-   if weights 
-       %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom(mfull00, mix_model, [], []);
-    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull00, mix_model, [], [],1);
-
-   else 
-    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull00, mix_model, [], [],1);
-   end 
-
+if complex
+    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom(mfull00, mix_model, [], []);
 else
     sij1dx = length_dist_1d_bins(events00,chromosome_sizes,100);
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist(mfull00, mix_model, bins, events00, 0);
-
 end
 
 

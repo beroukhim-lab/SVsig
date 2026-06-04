@@ -77,7 +77,6 @@ function hits_table = run2DModel(varargin)
     % Filtering and statistical settings
     std_filter = getOpt(cfg, 'std_filter', 10);
     len_filter = getOpt(cfg, 'len_filter', 1e6);
-    bks_cluster = getOpt(cfg, 'bks_cluster', 1);
     fdr_threshold = getOpt(cfg, 'fdr_threshold', 0.1);
     tier_std_cutoff = getOpt(cfg, 'tier_std_cutoff', 42833.6);
     low_density_threshold_value = getOpt(cfg, 'low_density_threshold', 5e-5);
@@ -105,20 +104,13 @@ function hits_table = run2DModel(varargin)
         'blacklist_file', blacklist_file, ...
         'l1_elements_file', l1_elements_file);
     resolved_tracks = resolve_track_paths(work_dir, genome_build_value, user_track_overrides);
-    fprintf('[run2DModel] resolved track files:
-');
-    fprintf('  ref_genes_file=%s
-', resolved_tracks.ref_genes_file);
-    fprintf('  cancer_genes_file=%s
-', resolved_tracks.cancer_genes_file);
-    fprintf('  curated_fusions_file=%s
-', resolved_tracks.curated_fusions_file);
-    fprintf('  chrom_sizes_file=%s
-', resolved_tracks.chrom_sizes_file);
-    fprintf('  blacklist_file=%s
-', resolved_tracks.blacklist_file);
-    fprintf('  l1_elements_file=%s
-', resolved_tracks.l1_elements_file);
+    fprintf('[run2DModel] resolved track files:\n');
+    fprintf('  ref_genes_file=%s\n', resolved_tracks.ref_genes_file);
+    fprintf('  cancer_genes_file=%s\n', resolved_tracks.cancer_genes_file);
+    fprintf('  curated_fusions_file=%s\n', resolved_tracks.curated_fusions_file);
+    fprintf('  chrom_sizes_file=%s\n', resolved_tracks.chrom_sizes_file);
+    fprintf('  blacklist_file=%s\n', resolved_tracks.blacklist_file);
+    fprintf('  l1_elements_file=%s\n', resolved_tracks.l1_elements_file);
 
     % Optionally set a fixed random seed for reproducibility.
     random_seed = getOpt(cfg, 'random_seed', []);
@@ -131,7 +123,7 @@ function hits_table = run2DModel(varargin)
     % Print parameters to log file for reproducibility and debugging.
     printRunParameters(work_dir, sv_file, output_file, model_exist, model_file, ...
                        complex_model, weights, std_filter, len_filter, ...
-                       bks_cluster, fdr_threshold, tier_std_cutoff, ...
+                       fdr_threshold, tier_std_cutoff, ...
                        num_breakpoints_per_bin, bin_length_value, chr_list, ...
                        genome_build_value, random_seed, save_bin_index, ...
                        low_density_threshold_value, resolved_tracks);
@@ -170,7 +162,7 @@ function hits_table = run2DModel(varargin)
     end
 
     % Run model
-    [hits_table, bins] = runSVsig(sv_file, model_exist, complex_model, weights, len_filter, bks_cluster, ...
+    [hits_table, bins] = runSVsig(sv_file, model_exist, complex_model, weights, len_filter, ...
                                   fdr_threshold, bin_length_value, num_breakpoints_per_bin, ...
                                   std_filter, model_file, tier_std_cutoff);
 
@@ -181,7 +173,7 @@ function hits_table = run2DModel(varargin)
     if save_bin_index
         [out_dir, out_base, out_ext] = fileparts(output_file);
         bin_index_file = fullfile(out_dir, [out_base, out_ext, '.bin_indices.txt']);
-        writetable(bins, bin_index_file, 'Delimiter', '\t');
+        writeBinIndicesFile(bins, bin_index_file);
         fprintf('[run2DModel] bin indices written to: %s\n', bin_index_file);
     end
 
@@ -227,8 +219,6 @@ function cfg = parseCliArgs(args)
                 cfg.low_density_threshold = str2double(char(value));
             case {'-len', '--len_filter'}
                 cfg.len_filter = str2double(char(value));
-            case {'-bks', '--bks_cluster'}
-                cfg.bks_cluster = str2double(char(value));
             case {'-fdr', '--fdr_threshold'}
                 cfg.fdr_threshold = str2double(char(value));
             case {'-nbpb', '--num_breakpoints_per_bin'}
@@ -330,8 +320,6 @@ function printHelp()
     fprintf('                                              default=false (forced true when complex_model=true)\n\n');
 
     fprintf('Binning and Clustering:\n');
-    fprintf('  -bks, --bks_cluster                [0|1]    Select breakpoint significance method variant (PVal(fragile sites not accounted for) or PvalMH(fragile sites account for)).\n');
-    fprintf('                                              default=1\n');
     fprintf('  -bin, --bin_length                 [num]    Length of bins for adjacency and binning.\n');
     fprintf('                                              default=5e5\n');
     fprintf('  -nbpb, --num_breakpoints_per_bin   [num]    Minimum breakpoints per bin for adjacency and binning.\n');
@@ -386,7 +374,7 @@ end
 
 function printRunParameters(work_dir, sv_file, output_file, model_exist, model_file, ...
                             complex_model, weights, std_filter, len_filter, ...
-                            bks_cluster, fdr_threshold, tier_std_cutoff, ...
+                            fdr_threshold, tier_std_cutoff, ...
                             num_breakpoints_per_bin, bin_length_value, chr_list, ...
                             genome_build_value, random_seed, save_bin_index, ...
                             low_density_threshold_value, resolved_tracks)
@@ -400,7 +388,6 @@ function printRunParameters(work_dir, sv_file, output_file, model_exist, model_f
     fprintf('--weights=%s\n', boolToText(weights));
     fprintf('--std_filter=%g\n', std_filter);
     fprintf('--len_filter=%g\n', len_filter);
-    fprintf('--bks_cluster=%g\n', bks_cluster);
     fprintf('--fdr_threshold=%g\n', fdr_threshold);
     fprintf('--tier_std_cutoff=%g\n', tier_std_cutoff);
     fprintf('--low_density_threshold=%g\n', low_density_threshold_value);
@@ -455,4 +442,19 @@ function text = chrListToText(chr_list)
         text = sprintf('%g,', chr_list);
         text = text(1:end-1);
     end
+end
+
+function writeBinIndicesFile(bins, bin_index_file)
+    if istable(bins)
+        writetable(bins, bin_index_file, 'Delimiter', '\t');
+        return;
+    end
+
+    if isnumeric(bins) || islogical(bins)
+        writematrix(bins, bin_index_file, 'Delimiter', '\t');
+        return;
+    end
+
+    error('run2DModel:BadBinIndexType', ...
+          'Unsupported bins type for sidecar output: %s', class(bins));
 end
