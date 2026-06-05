@@ -6,7 +6,7 @@
 
 ## _SVsig_ Install and Dependencies 
 
-SVsig uses MATLAB, which can be obtained [here](https://www.mathworks.com/products/matlab.html). This version has primarily been tested using `MATLAB_R2020a` on macOS Sonoma (14.5). 
+SVsig uses MATLAB, which can be obtained [here](https://www.mathworks.com/products/matlab.html). This version has primarily been tested using `MATLAB_R2020a` on macOS Sonoma (14.5) and `MATLAB_R2023b` on x86_64. 
 
 Additionally, install the following MATLAB toolboxes:
 - Statistics and Machine Learning Toolbox
@@ -20,21 +20,18 @@ Clone this repo into the directory you wish to run SVSig in.
 
 
 ### Preparing files
-SVsig takes in an input .csv file with 15 columns. An example is in this repo under `data/merged_1.6.1.csv`. Your file must match the column names exactly. 
-- **seqnames, start, strand, altchr, altpos, altstrand**: genomic coordinates of both rearrangement breakpoints.
-    - Note that chromosome coordinates are integers only. chrX and chrY are changed to 23 and 24, respectively. 
-- **dcc_project_code**: histology or tissue type information. 
-- **sv_id**: ID for individual rearrangement
-- **sid**: Patient ID for the rearrangement
-- **donor_unique_id**: Patient ID for the rearrangement
-- **weights**: Ranges from 0-1, representing the weight an individual connection is given to an entire rearragnement event. 
+SVsig accepts input CSV files with required columns identified by **column name** (not fixed position). Additional columns are allowed and ignored unless used downstream for reporting.
 
-Optional columns:
-If this information is not available, set column values to arbitrary value. Will not affect ability to run the model.
-- **topo**: rearrangement topology information
-- **topo_n**: number of rearrangements involved in topology. 
-- **mech**: DNA damage repair mechanism predicted to generate the rearrangement. 
-- **homseq**: number of base pairs of microhomology at the breakpoint junctions. 
+Required columns (both simple and complex models):
+- **seqnames, start, strand, altchr, altpos, altstrand**: genomic coordinates and strands of both rearrangement breakpoints.
+  - `seqnames` and `altchr` can be `1-22`, `X`, `Y`, `chr1-22`, `chrX`, or `chrY`.
+- **sid**: sample identifier used for sample-level de-duplication and per-cluster recurrence counts.
+
+Conditionally required:
+- **weights**: required for meaningful complex-model runs (`complex_model=true`).
+  - For simple model runs, if `weights` is missing, SVsig defaults all weights to `1`.
+
+No additional columns are required. Inputs may contain extra columns, and SVsig will ignore them for model fitting.
 
 <br>
 
@@ -65,8 +62,7 @@ _SVsig-2Dc_ accounts for novel connections that arise from neiboring rearrangeme
 ### Additional parameters (set in run2DModel.m)
 - **model_exist**: Boolean to skip model training and use a pre-determined background model. If True, add path to background model in line 23 (complex model) or 25 (simple model) of runSVSig.m. 
 - **len_filter**: Only considers rearrangements above this length for calculating significance. Default is 1Mb. 
-- **bks_cluster**: Set to 1. 
-- **FDR_THRESHOLD**: FDR threshold for determining significance. 
+- **fdr_threshold**: FDR threshold for determining significance. 
 - **output_file**: path to output file 
 - **complex**: Boolean to run SVSig-2Dc (complex model). 
 - **num_breakpoints_per_bin**: Average number of breakpoints within a bin. Determines bin boundaries so that each tile has approximately this number of breakpoints. Currently not used.
@@ -76,10 +72,31 @@ _SVsig-2Dc_ accounts for novel connections that arise from neiboring rearrangeme
 <br>
 
 ### Outputs
-_SVsig-2D_ and _SVsig-2Dc_ output a file containing significantly recurrently events. Each unique event is denoted with by a cluster number. The genomic coordinates, subtype, and ID information for each rearrangement in a cluster are displayed. In addition, the following columns are present:  
-- **cluster_num**: Cluster number each connection belongs to. 
-- **pval**: Significance for the rearrangement event. 
-- **num_hits**: Number of unique samples containing the rearrangement. 
+_SVsig-2D_ and _SVsig-2Dc_ output a TSV where each row is a rearrangement assigned to a significantly recurrent cluster, denoted with a cluster number. Output columns are:
+
+- **cluster_num**: Recurrent-cluster ID.
+- **sid**: Sample ID for the rearrangement.
+- **gene_i, gene_j**: Prioritized gene labels near each breakpoint.
+  - `**` means the gene pair matches a curated fusion pair reference.
+  - `*` means the gene is in the cancer-gene reference list.
+  - Genes are ordered by priority: `**` first, then `*`, then unannotated.
+- **all_genes_i, all_genes_j**: Full nearby-gene lists before prioritization/truncation.
+- **bin_i, bin_j**: Bin IDs for each breakpoint.
+- **chr_i, pos_i, strand_i**: Breakpoint i chromosome, position, and strand.
+- **chr_j, pos_j, strand_j**: Breakpoint j chromosome, position, and strand.
+- **sv_class**: SV class derived from chromosome and strand orientation:
+  - `inter_chr`: `chr_i ~= chr_j` (interchromosomal event).
+  - `del`: `chr_i == chr_j` and `strand_i = +`, `strand_j = -`.
+  - `tandem_dup`: `chr_i == chr_j` and `strand_i = -`, `strand_j = +`.
+  - `inv`: `chr_i == chr_j` and `strand_i = strand_j` (`++` or `--`).
+  - `unknown`: `chr_i == chr_j` but one or both strands use an unrecognized encoding.
+  - Strand parser accepts both symbol and numeric encodings: `+/-`, `1/-1`, and `+1/-1`.
+- **tile_qval**: Tile-level BH-FDR q-value.
+- **pval**: Tile-level p-value.
+- **prob**: Background-model probability for the tile.
+- **num_hits**: Number of unique samples in the cluster.
+- **stddev_i, stddev_j**: Position standard deviation at each breakpoint across SVs in the cluster.
+- **tier**: Tier label based on breakpoint spread thresholds (`tier 1`, `tier 2`, `tier 3`).
 <br>
 
 ## Tutorial
@@ -87,14 +104,14 @@ _SVsig-2D_ and _SVsig-2Dc_ output a file containing significantly recurrently ev
 To ensure that SVsig is installed and running properly, we will run the file `data/TUTORIAL_rearrangements.csv`, which contains a random sampling of 100,000 rearrangements from the dataset in the manuscript. Change the following parameters (use the default for the remaining parameters) and run SVSig-2D:
 
 - **bin_length**: 1e6
-- **FDR_THRESHOLD**: 0.01
+- **fdr_threshold**: 0.01
 
 Runtime was measured to be around 7 minutes on a standard laptop with 16GB RAM. The expected output file is shown at `results/TUTORIAL_hitsalljunctions_fdr0.01_1e6bins.txt`. 
 
 To recreate the results in the manuscript from SVSig-2D, use the `data/merged_1.6.1.csv` file, which includes the full set of nearly 300,000 rearrangements from the PCAWG cohort. Additionally, use the following parameters: 
 
 - **bin_length**: 5e5
-- **FDR_THRESHOLD**: 0.1
+- **fdr_threshold**: 0.1
 
 ## Troubleshooting
 

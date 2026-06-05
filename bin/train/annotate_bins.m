@@ -10,7 +10,7 @@ if flag==1,
 else
     numa=length(events_annot(1,:));
 end
-nume=length(bins);
+nume=size(bins,1);
 events_annot=logical(events_annot);
 
 bins_annot=zeros(nume,numa);

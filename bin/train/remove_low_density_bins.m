@@ -43,7 +43,7 @@ end
 events0(events_to_remove,:)=[];
 bins0(bins_to_remove,:)=[];
 
-numbins=length(bins0);
+numbins=size(bins0,1);
 
 disp(['removed ' num2str(sum(events_to_remove)) ' events in ' num2str(sum(bins_to_remove)) 'bins'])
 

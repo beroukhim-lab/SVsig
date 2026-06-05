@@ -12,7 +12,7 @@ function annot_tiles=tiles_annot(track,events,bins,CHR)
 % 10 and on are annotations given by varargin
 pad=1e4;
 nume=length(events);
-lenbins=length(bins);
+lenbins=size(bins,1);
 
 short0=1e6;
 long0=5e7;

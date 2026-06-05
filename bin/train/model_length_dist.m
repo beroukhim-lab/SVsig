@@ -21,7 +21,7 @@ for c1=CHR
     numbins_chr(c1)=sum(bins(:,1)==c1);
 end
 
-numbins=length(bins);
+numbins=size(bins,1);
 len_factor=sparse(sum(numbins_chr.*(numbins_chr+1))/2,length(d_sij1dx));
 ct=1;
 for c1=CHR

@@ -35,16 +35,22 @@ EventLengthThreshold=200; % filter short event [bp], deafult 200
 num_annot=4;
 min_bin_dist = 500; % def = 500; minimum distance of bins-separating events
 
-Tumor_column=7; 
-Event_column=8;
-Sample_column=9;
-Patient_column=10;
-Weights_column = 11;
+sample_id_column = 9;
+
+input_columns = struct( ...
+	'seqnames', 'seqnames', ...
+	'start', 'start', ...
+	'strand', 'strand', ...
+	'altchr', 'altchr', ...
+	'altpos', 'altpos', ...
+	'altstrand', 'altstrand', ...
+	'sid', 'sid', ...
+	'weights', 'weights');
 
 % Generate numeric array of events from merge set
 %returns an events matrix with a list of junctions
 %also returns unique vectors for the sample ids, sv_ids, tumor subtypes, strands,topologies and mechanism 
-[events0, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2] = GenerateSVarray(EventsFile,EventLengthThreshold,CHR,Tumor_column,Event_column,Sample_column,Patient_column, Weights_column);
+[events0, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2] = GenerateSVarray(EventsFile, EventLengthThreshold, CHR, input_columns);
 
 % remove events in blacklist regions
 [events0,masked_events] = mask_events(events0, blacklist_regions);
@@ -88,7 +94,7 @@ bins=bins0;
 events00=events0;
 mfull=mfull0;
 
-[bins_event_tble, bins, mfull, events00, removed_events] = RemoveSameSampleEvents(bins_event_tble0, bins0, mfull0, events0,Patient_column,1);
+[bins_event_tble, bins, mfull, events00, removed_events] = RemoveSameSampleEvents(bins_event_tble0, bins0, mfull0, events0, sample_id_column, 1);
 
 %remove events in the same nucleotide (artifacts)
 [bins_event_tble, bins, mfull, events00, removed_events_std] = RemoveZeroVarSampleEvents(bins_event_tble, bins, mfull, events00);

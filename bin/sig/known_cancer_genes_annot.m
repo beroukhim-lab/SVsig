@@ -31,7 +31,7 @@ if len_i>0 && len_j>0
                     known_genes_i(c1,2)=1;
                 end
                 if sum(strcmp(gene_j0(c2),cancer_gene_symbols(:,1)))>0 
-                    known_genes_j(c1,2)=1;
+                    known_genes_j(c2,2)=1;
                 end
             end
         end

@@ -20,12 +20,12 @@ if nargin < 11 || isempty(tier_std_cutoff)
 end
  
 
-%load rearrangement data table with the following columns:
-
-% {seqnames, start, strand1, altchr, altpos, strand2,
-% subtype(histology), sv_id, sid(sample ID),donor_unique_id}
+% Load rearrangement data table by required column names.
+% Required: seqnames, start, strand, altchr, altpos, altstrand,
+%           sid
 
 SVTable=readtable(sv_file, 'Delimiter', ',');
+SVTable = standardizeSVInputTable(SVTable);
 
 
 
@@ -55,6 +55,13 @@ if complex
 else
     sij1dx = length_dist_1d_bins(events00,chromosome_sizes,100);
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist(mfull00, mix_model, bins, events00, 0);
+end
+
+if isempty(pval_tophits_mix) || size(pval_tophits_mix,1) == 0
+    % if no significant hits, return empty table with correct columns and skip annotation steps
+    fprintf('[runSVsig] No significant hits found. Writing empty output table.\n');
+    hits_table = createEmptyHitsTable();
+    return;
 end
 
 
@@ -99,7 +106,6 @@ hits_table.all_genes_i = annotated_table.nearby_genes_i;
 hits_table.gene_j = annotated_table.gene_j;
 hits_table.all_genes_j = annotated_table.nearby_genes_j;
 
-hits_table.subtype = annotated_table.dcc_project_code;
 hits_table.bin_i = annotated_table.bin_i;
 hits_table.chr_i = annotated_table.seqnames;
 hits_table.pos_i = annotated_table.start;
@@ -108,6 +114,7 @@ hits_table.bin_j = annotated_table.bin_j;
 hits_table.chr_j = annotated_table.altchr;
 hits_table.pos_j = annotated_table.altpos;
 hits_table.strand_j = annotated_table.altstrand;
+hits_table.sv_class = classifySVClass(hits_table.chr_i, hits_table.chr_j, hits_table.strand_i, hits_table.strand_j);
 hits_table.tile_qval = annotated_table.tile_qval;
 hits_table.pval = annotated_table.pval;
 hits_table.prob = annotated_table.p_mix;
@@ -163,6 +170,159 @@ hits_table = hits_table(keep, :);
 disp(strcat('the number of hits post-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
 
 end   
+
+function SVTable = standardizeSVInputTable(SVTable)
+required_cols = {'seqnames', 'start', 'strand', 'altchr', 'altpos', 'altstrand', 'sid'};
+for k = 1:numel(required_cols)
+    if ~any(strcmp(SVTable.Properties.VariableNames, required_cols{k}))
+        error('runSVsig:MissingInputColumn', 'Missing required input column: %s', required_cols{k});
+    end
+end
+
+SVTable.seqnames = normalizeChrVector(SVTable.seqnames, 'seqnames');
+SVTable.altchr = normalizeChrVector(SVTable.altchr, 'altchr');
+SVTable.start = toNumericVector(SVTable.start, 'start');
+SVTable.altpos = toNumericVector(SVTable.altpos, 'altpos');
+end
+
+function values = toNumericVector(raw_values, column_name)
+if isnumeric(raw_values)
+    values = double(raw_values);
+    return;
+end
+
+if iscategorical(raw_values)
+    raw_values = string(raw_values);
+elseif iscell(raw_values)
+    raw_values = string(raw_values);
+end
+
+values = str2double(string(raw_values));
+if any(isnan(values))
+    error('runSVsig:BadNumericInput', 'Column %s must contain numeric values.', column_name);
+end
+end
+
+function chr_num = normalizeChrVector(raw_values, column_name)
+n_rows = numel(raw_values);
+chr_num = zeros(n_rows, 1);
+for i = 1:n_rows
+    chr_num(i) = normalizeChrValue(raw_values(i));
+end
+
+if any(chr_num < 1 | chr_num > 24 | isnan(chr_num))
+    error('runSVsig:BadChromosomeInput', ...
+          'Column %s contains noncanonical chromosome values. Use 1-22, X, or Y (with or without chr prefix).', ...
+          column_name);
+end
+end
+
+function chr_val = normalizeChrValue(raw_value)
+if iscell(raw_value)
+    raw_value = raw_value{1};
+end
+
+if isnumeric(raw_value)
+    chr_val = double(raw_value);
+    return;
+end
+
+if iscategorical(raw_value)
+    raw_value = string(raw_value);
+end
+
+chr_text = lower(strtrim(string(raw_value)));
+chr_text = erase(chr_text, "chr");
+
+if chr_text == "x"
+    chr_val = 23;
+elseif chr_text == "y"
+    chr_val = 24;
+else
+    chr_val = str2double(chr_text);
+end
+end
+
+function hits_table = createEmptyHitsTable()
+var_names = {'cluster_num','sid','gene_i','all_genes_i','gene_j','all_genes_j', ...
+             'bin_i','chr_i','pos_i','strand_i','bin_j','chr_j','pos_j','strand_j', ...
+             'sv_class','tile_qval','pval','prob','num_hits','stddev_i','stddev_j','tier'};
+var_types = {'double','cell','cell','cell','cell','cell', ...
+             'double','double','double','double','double','double','double','double', ...
+             'cell','double','double','double','double','double','double','cell'};
+
+hits_table = table('Size',[0 numel(var_names)], 'VariableTypes', var_types, 'VariableNames', var_names);
+end
+
+function sv_class = classifySVClass(chr_i, chr_j, strand_i, strand_j)
+n_rows = numel(chr_i);
+sv_class = repmat({''}, n_rows, 1);
+
+for i = 1:n_rows
+    if chr_i(i) ~= chr_j(i)
+        sv_class{i} = 'inter_chr';
+        continue;
+    end
+
+    si = normalizeStrandValue(strand_i(i));
+    sj = normalizeStrandValue(strand_j(i));
+
+    if si == "unknown" || sj == "unknown"
+        sv_class{i} = 'unknown';
+    elseif si == "+" && sj == "-"
+        sv_class{i} = 'del';
+    elseif si == "-" && sj == "+"
+        sv_class{i} = 'tandem_dup';
+    elseif (si == "+" && sj == "+") || (si == "-" && sj == "-")
+        sv_class{i} = 'inv';
+    else
+        sv_class{i} = 'unknown';
+    end
+end
+end
+
+function strand_text = normalizeStrandValue(raw_strand)
+if iscell(raw_strand)
+    raw_strand = raw_strand{1};
+end
+
+if isnumeric(raw_strand)
+    if isscalar(raw_strand)
+        if raw_strand == 1
+            strand_text = "+";
+            return;
+        elseif raw_strand == -1
+            strand_text = "-";
+            return;
+        end
+    end
+    strand_text = "unknown";
+    return;
+end
+
+if iscategorical(raw_strand)
+    raw_strand = string(raw_strand);
+end
+
+strand_text = string(raw_strand);
+strand_text = strtrim(strand_text);
+
+if strand_text == "+" || strand_text == "-"
+    return;
+end
+
+if strand_text == "1" || lower(strand_text) == "+1"
+    strand_text = "+";
+    return;
+end
+
+if strand_text == "-1"
+    strand_text = "-";
+    return;
+end
+
+strand_text = "unknown";
+end
 
 
 

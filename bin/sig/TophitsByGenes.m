@@ -28,7 +28,7 @@ while sum(counted_bins)>0,
     TbyGene(Tc).bins(1)=current_bin_idx;
     
     % find adjacent bins with significant events
-    if current_bin(1)-1 >0 && current_bin(1)+1 < length(bins)
+    if current_bin(1)-1 >0 && current_bin(1)+1 < size(bins,1)
         contig_bins=counted_bins&hitstable_lookup(:,1)==current_bin(1)+1&hitstable_lookup(:,2)==current_bin(2)&bins(current_bin(1,1))==bins(current_bin(1)+1,1);
         contig_bins=contig_bins|(counted_bins&hitstable_lookup(:,1)==current_bin(1)-1&hitstable_lookup(:,2)==current_bin(2)&bins(current_bin(1,1))==bins(current_bin(1)+1,1));
         contig_bins=contig_bins|(counted_bins&hitstable_lookup(:,1)==current_bin(1)&hitstable_lookup(:,2)==current_bin(2)+1&bins(current_bin(1,1))==bins(current_bin(1)+1,1));
@@ -107,11 +107,10 @@ while sum(counted_bins)>0,
 
     [gene_i, gene_j] = known_cancer_genes_annot(gene_i, gene_j, curated_fusion_pairs, cancer_gene_symbols);
 
-    %Antonia: Move genes with asterisks to the front of the list
-    prioritize = endsWith(string(gene_i), "*");
-    gene_i = [gene_i(prioritize), gene_i(~prioritize)];
-    prioritize = endsWith(string(gene_j), "*");
-    gene_j = [gene_j(prioritize), gene_j(~prioritize)];
+    % Antonia: Move genes with higher annotation priority to the front:
+    % fusion (**) first, then cancer gene (*), then unannotated.
+    gene_i = prioritizeAnnotatedGenes(gene_i);
+    gene_j = prioritizeAnnotatedGenes(gene_j);
     
     TbyGene(Tc).pos_i = sprintf('%2d:%9d-%9d',range(Tc,1),range(Tc,2),range(Tc,3));
     TbyGene(Tc).pos_j = sprintf('%2d:%9d-%9d',range(Tc,4),range(Tc,5),range(Tc,6));
@@ -213,5 +212,19 @@ sum([TbyGene.num_events])
 
 %struct2table(T)
 %writetable(struct2table(T),'hitsgenetable.csv','Delimiter',',','QuoteStrings',true);
+
+function genes_out = prioritizeAnnotatedGenes(genes_in)
+if isempty(genes_in)
+    genes_out = genes_in;
+    return;
+end
+
+gene_text = string(genes_in);
+is_double = endsWith(gene_text, "**");
+is_single = endsWith(gene_text, "*") & ~is_double;
+is_plain = ~is_double & ~is_single;
+
+genes_out = [genes_in(is_double), genes_in(is_single), genes_in(is_plain)];
+end
     
     

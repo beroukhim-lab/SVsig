@@ -23,7 +23,7 @@ for c1 = CHR
         bins(bc,2)=start1;
         bins(bc,3) =start1+avg_length_chr-1;        
         breaks_per_bin=find(sorted_pos(:,1)<=(start1+avg_length_chr) & sorted_pos(:,1)>=start1);
-        bins(bc,4) = length(breaks_per_bin);     
+        bins(bc,4) = length(breaks_per_bin);
         bc=bc+1;
         start1=start1+avg_length_chr;
         
@@ -33,5 +33,5 @@ for c1 = CHR
 
 end
 
-numbins = length(bins);   
+numbins = size(bins,1);   
 
