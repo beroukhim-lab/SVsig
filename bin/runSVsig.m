@@ -1,6 +1,6 @@
 
-function [hits_table, bins] = runSVsig(sv_file, model_exist, complex, weights, len_filter, ...
-FDR_THRESHOLD, bin_length, num_breakpoints_per_bin, std_filter, model_file, tier_std_cutoff)
+function [hits_table, bins] = runSVsig(sv_file, model_exist, complex_model, weights_value, len_filter, ...
+fdr_threshold, bin_length_value, num_breakpoints_per_bin_value, std_filter, model_file, tier_std_cutoff, run_context, bin_shift)
 global cancer_gene_symbols
 global curated_fusion_pairs
 global chromosome_sizes
@@ -11,6 +11,17 @@ global bins
 global bins_event_tble
 global mfull00
 global mix_model
+global WorkDir
+global CHR
+global genome_build
+global TRACK_PATHS
+global LOW_DENSITY_THRESHOLD
+global BIN_SHIFT
+global FDR_THRESHOLD
+global complex
+global weights
+global bin_length
+global num_breakpoints_per_bin
 
 if nargin < 10 || isempty(model_file)
     model_file = '';
@@ -18,6 +29,36 @@ end
 if nargin < 11 || isempty(tier_std_cutoff)
     tier_std_cutoff = 38491;
 end
+if nargin < 12 || isempty(run_context)
+    run_context = struct();
+end
+if nargin < 13
+    bin_shift = [];
+end
+
+% Initialize globals in each invocation so this function can run safely
+% in serial or on parallel workers.
+if isfield(run_context, 'work_dir')
+    WorkDir = run_context.work_dir;
+end
+if isfield(run_context, 'chr_list')
+    CHR = run_context.chr_list;
+end
+if isfield(run_context, 'genome_build')
+    genome_build = run_context.genome_build;
+end
+if isfield(run_context, 'track_paths')
+    TRACK_PATHS = run_context.track_paths;
+end
+if isfield(run_context, 'low_density_threshold')
+    LOW_DENSITY_THRESHOLD = run_context.low_density_threshold;
+end
+FDR_THRESHOLD = fdr_threshold;
+BIN_SHIFT = bin_shift;
+complex = complex_model;
+weights = weights_value;
+bin_length = bin_length_value;
+num_breakpoints_per_bin = num_breakpoints_per_bin_value;
  
 
 % Load rearrangement data table by required column names.
@@ -50,7 +91,7 @@ else
 end
 
 
-if complex
+if complex_model
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom_avgdist(mfull00, mix_model, [], [], bins, events00);
 else
     sij1dx = length_dist_1d_bins(events00,chromosome_sizes,100);
@@ -160,12 +201,37 @@ is_tier1 = hits_table.stddev_i <= tier_std_cutoff & hits_table.stddev_j <= tier_
 is_tier2 = xor(hits_table.stddev_i <= tier_std_cutoff, hits_table.stddev_j <= tier_std_cutoff);
 tier(is_tier1) = {'tier 1'};
 tier(is_tier2) = {'tier 2'};
-hits_table.tier = tier;
-    
+hits_table.supercluster_tier = tier;
+
+% Single-run only: supercluster_id is remapped cluster_num, sv_cluster_ids is tuple format.
+original_cluster_num = hits_table.cluster_num;
+[~, ~, remapped_cluster_idx] = unique(hits_table.cluster_num, 'stable');
+hits_table.supercluster_id = remapped_cluster_idx;
+hits_table.sv_cluster_ids = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.sv_cluster_tiers = tier;
+hits_table.sv_tile_qval = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.sv_pval = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.sv_prob = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.supercluster_cluster_ids = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.supercluster_pval = hits_table.pval;
+hits_table.supercluster_prob = hits_table.prob;
+hits_table.supercluster_nsamples = hits_table.num_hits;
+hits_table.shifts_found_count = repmat(1, height(hits_table), 1);
+for i = 1:height(hits_table)
+    tuple_str = sprintf('(0, %d)', original_cluster_num(i));
+    hits_table.sv_cluster_ids{i} = tuple_str;
+    hits_table.sv_tile_qval{i} = sprintf('%.4g', hits_table.tile_qval(i));
+    hits_table.sv_pval{i} = sprintf('%.4g', hits_table.pval(i));
+    hits_table.sv_prob{i} = sprintf('%.4g', hits_table.prob(i));
+    hits_table.supercluster_cluster_ids{i} = tuple_str;
+end
 
 %keep only the clusters that pass filtration criteria
 keep = ismember(hits_table.cluster_num, clusters_to_keep);
 hits_table = hits_table(keep, :);
+
+% Remove the old cluster_num to avoid confusion.
+hits_table.cluster_num = [];
 
 disp(strcat('the number of hits post-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
 

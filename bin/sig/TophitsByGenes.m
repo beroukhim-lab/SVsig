@@ -213,6 +213,8 @@ sum([TbyGene.num_events])
 %struct2table(T)
 %writetable(struct2table(T),'hitsgenetable.csv','Delimiter',',','QuoteStrings',true);
 
+end
+
 function genes_out = prioritizeAnnotatedGenes(genes_in)
 if isempty(genes_in)
     genes_out = genes_in;

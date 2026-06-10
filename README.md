@@ -12,7 +12,7 @@ Additionally, install the following MATLAB toolboxes:
 - Statistics and Machine Learning Toolbox
 - Optimization Toolbox
 
-Clone this repo into the directory you wish to run SVSig in. 
+Clone this repo into the directory you wish to run _SVsig_ in. 
 
 
 
@@ -20,7 +20,7 @@ Clone this repo into the directory you wish to run SVSig in.
 
 
 ### Preparing files
-SVsig accepts input CSV files with required columns identified by **column name** (not fixed position). Additional columns are allowed and ignored unless used downstream for reporting.
+_SVsig_ accepts input CSV files with required columns identified by **column name**. Additional columns are allowed but ignored.
 
 Required columns (both simple and complex models):
 - **seqnames, start, strand, altchr, altpos, altstrand**: genomic coordinates and strands of both rearrangement breakpoints.
@@ -46,7 +46,7 @@ _SVsig-2D_ considers each rearrangement to occur independently of each other.
 <br>
 
 ### Complex Rearrangements Model (_SVsig-2Dc_) 
-_SVsig-2Dc_ accounts for novel connections that arise from neiboring rearrangements. 
+_SVsig-2Dc_ accounts for novel connections that arise from neighboring rearrangements. 
 
 - To first identify neighboring rearrangements, run [JaBbA](https://github.com/mskilab-org/JaBbA) to obtain a juxtapositions file.
 
@@ -60,64 +60,86 @@ _SVsig-2Dc_ accounts for novel connections that arise from neiboring rearrangeme
 <br>
 
 ### Additional parameters (set in run2DModel.m)
-- **model_exist**: Boolean to skip model training and use a pre-determined background model. If True, add path to background model in line 23 (complex model) or 25 (simple model) of runSVSig.m. 
+- **model_exist**: Boolean to skip model training and use a pre-determined background model. If True, set the **background_model_path** parameter to point to a pre-trained model file (for either simple or complex model mode). 
 - **len_filter**: Only considers rearrangements above this length for calculating significance. Default is 1Mb. 
 - **fdr_threshold**: FDR threshold for determining significance. 
-- **output_file**: path to output file 
-- **complex**: Boolean to run SVSig-2Dc (complex model). 
+- **output_file**: Path to output file. 
+- **complex**: Boolean to run _SVsig-2Dc_ (complex model). 
 - **num_breakpoints_per_bin**: Average number of breakpoints within a bin. Determines bin boundaries so that each tile has approximately this number of breakpoints. Currently not used.
 - **bin_length**: Length of bin to divide genome. Suggested ranges are 500kb - 2Mb. Note that the number of calculations scales quadratically as bin_length decreases. 
-- **weights**: Weight given to each individual connection, ranges from 0-1. Weight=1 for the simple model. For the complex model, weights are obtained from the juxtapositions file after running [JaBbA](https://github.com/mskilab-org/JaBbA)
-- **genome_build**: 'hg19' or 'hg_38'.
+- **weights**: Weight given to each individual connection, ranges from 0-1. Weight=1 for the simple model. For the complex model, weights are obtained from the juxtapositions file after running [JaBbA](https://github.com/mskilab-org/JaBbA).
+- **genome_build**: 'hg19' or 'hg38'.
+- **n_binshifts**: Number of additional bin-shift runs to perform. Default is 0 (no bin-shifting). Each shift tests the robustness of cluster detection by offsetting bin boundaries. When n_binshifts > 0, results from all runs are merged into superclusters based on spatial proximity.
+- **max_workers_override**: Maximum number of parallel workers for bin-shift runs. If empty or 0, automatically detected from system CPU count. Only used when n_binshifts > 0.
+- **supercluster_distance_threshold**: Distance threshold (in bp) for merging clusters across bin-shifted runs. Default is 50000 bp. Clusters are considered part of the same supercluster if both breakpoints are within this distance on both breakpoint coordinates.
 <br>
 
-### Outputs
-_SVsig-2D_ and _SVsig-2Dc_ output a TSV where each row is a rearrangement assigned to a significantly recurrent cluster, denoted with a cluster number. Output columns are:
+### Bin-Shifting Mode
 
-- **cluster_num**: Recurrent-cluster ID.
+When `n_binshifts > 0`, _SVsig_ runs the model multiple times with different bin boundary offsets to assess cluster robustness:
+- **Run 0** (baseline): Standard binning with no offset.
+- **Runs 1 to n_binshifts**: Each run applies a fractional offset k/(n_binshifts+1) of the bin_length, creating alternative binning schemes.
+- **Merging**: After filtering per-run results, clusters from all runs are merged into superclusters based on proximity thresholds on both breakpoint coordinates.
+- **Output**: Single merged table with supercluster IDs, per-SV cluster tracking (sv_cluster_ids, sv_cluster_tiers), and multi-run statistics.
+_SVsig-2D_ and _SVsig-2Dc_ output a TSV where each row is a rearrangement assigned to a significantly recurrent cluster. Output columns are:
+
+**Cluster and Supercluster Identification:**
+- **supercluster_id**: Integer ID for the merged cluster (same run or across bin-shifted runs). In single-run mode, this is a remapped cluster ID; in multi-run mode, it represents the connected component ID after merging.
+- **sv_cluster_ids**: Tuple format identifying all clusters this SV belongs to, e.g., `(0, 5), (1, 3)`. Format is `(run_idx, cluster_num)` for each cluster.
+- **sv_cluster_tiers**: Tier values for each cluster listed in `sv_cluster_ids`, in matching order (e.g., `tier 1, tier 2`). Useful for tracking cluster precision before merging.
+- **supercluster_cluster_ids**: All clusters in this supercluster in tuple format, e.g., `(0, 3), (0, 5), (1, 2)`. Shows all (run_idx, cluster_num) pairs in the supercluster.
+- **supercluster_tier**: Tier label for the supercluster based on position spread thresholds: `tier 1` (both stddev ≤ cutoff), `tier 2` (one stddev ≤ cutoff), `tier 3` (both stddev > cutoff).
+- **shifts_found_count**: Number of bin-shift runs where this SV was detected. Value is 1 for single-run (no bin-shifting), ≥1 for multi-run.
+
+**Sample and Gene Information:**
 - **sid**: Sample ID for the rearrangement.
 - **gene_i, gene_j**: Prioritized gene labels near each breakpoint.
   - `**` means the gene pair matches a curated fusion pair reference.
   - `*` means the gene is in the cancer-gene reference list.
   - Genes are ordered by priority: `**` first, then `*`, then unannotated.
 - **all_genes_i, all_genes_j**: Full nearby-gene lists before prioritization/truncation.
+
+**Genomic Coordinates:**
 - **bin_i, bin_j**: Bin IDs for each breakpoint.
 - **chr_i, pos_i, strand_i**: Breakpoint i chromosome, position, and strand.
 - **chr_j, pos_j, strand_j**: Breakpoint j chromosome, position, and strand.
 - **sv_class**: SV class derived from chromosome and strand orientation:
-  - `inter_chr`: `chr_i ~= chr_j` (interchromosomal event).
+  - `inter_chr`: `chr_i ≠ chr_j` (interchromosomal event).
   - `del`: `chr_i == chr_j` and `strand_i = +`, `strand_j = -`.
   - `tandem_dup`: `chr_i == chr_j` and `strand_i = -`, `strand_j = +`.
   - `inv`: `chr_i == chr_j` and `strand_i = strand_j` (`++` or `--`).
   - `unknown`: `chr_i == chr_j` but one or both strands use an unrecognized encoding.
   - Strand parser accepts both symbol and numeric encodings: `+/-`, `1/-1`, and `+1/-1`.
-- **tile_qval**: Tile-level BH-FDR q-value.
-- **pval**: Tile-level p-value.
-- **prob**: Background-model probability for the tile.
-- **num_hits**: Number of unique samples in the cluster.
-- **stddev_i, stddev_j**: Position standard deviation at each breakpoint across SVs in the cluster.
-- **tier**: Tier label based on breakpoint spread thresholds (`tier 1`, `tier 2`, `tier 3`).
+
+**Statistical Measures:**
+- **tile_qval, pval, prob**: Per-run tile q-value, p-value, and background probability (from the specific run/cluster where SV was detected).
+- **sv_tile_qval, sv_pval, sv_prob**: Comma-separated lists (multi-run only) matching `sv_cluster_ids` order; per-cluster statistics for each run where the SV appears.
+- **supercluster_pval**: Minimum p-value across all clusters in supercluster.
+- **supercluster_prob**: Mean probability across all SVs in supercluster.
+- **supercluster_nsamples**: Number of unique samples in supercluster.
+- **supercluster_tier**: Tier label (`tier 1/2/3`) based on position spread.
+- **stddev_i, stddev_j**: Position standard deviation at each breakpoint across supercluster SVs.
 <br>
 
 ## Tutorial
 
-To ensure that SVsig is installed and running properly, we will run the file `data/TUTORIAL_rearrangements.csv`, which contains a random sampling of 100,000 rearrangements from the dataset in the manuscript. Change the following parameters (use the default for the remaining parameters) and run SVSig-2D:
+To ensure that _SVsig_ is installed and running properly, we will run the file `data/TUTORIAL_rearrangements.csv`, which contains a random sampling of 100,000 rearrangements from the dataset in the manuscript. Change the following parameters (use the default for the remaining parameters) and run _SVsig_-2D:
 
 - **bin_length**: 1e6
 - **fdr_threshold**: 0.01
 
 Runtime was measured to be around 7 minutes on a standard laptop with 16GB RAM. The expected output file is shown at `results/TUTORIAL_hitsalljunctions_fdr0.01_1e6bins.txt`. 
 
-To recreate the results in the manuscript from SVSig-2D, use the `data/merged_1.6.1.csv` file, which includes the full set of nearly 300,000 rearrangements from the PCAWG cohort. Additionally, use the following parameters: 
+To recreate the results in the manuscript from _SVsig-2D_, use the `data/merged_1.6.1.csv` file, which includes the full set of nearly 300,000 rearrangements from the PCAWG cohort. Additionally, use the following parameters: 
 
 - **bin_length**: 5e5
 - **fdr_threshold**: 0.1
 
 ## Troubleshooting
 
-Common issues with running _SVSig_ often involve the number of rearrangements in your dataset. SVSig requires a large number of rearrangements since they become sparse once distributed across the genome-wide adjacency matrix. Additionally, at least one rearrangement needs to exist on every chromosome. Ideally, there are at least 100,000 rearrangements in your dataset, although we have run _SVSig_ with data containing only 50,000 rearrangements. For smaller datasets, we recommend increasing the bin_length parameter and increasing the FDR. 
+Common issues with running _SVsig_ often involve the number of rearrangements in your dataset. _SVsig_ requires a large number of rearrangements since they become sparse once distributed across the genome-wide adjacency matrix. Additionally, at least one rearrangement needs to exist on every chromosome. Ideally, there are at least 100,000 rearrangements in your dataset, although we have run _SVsig_ with data containing only 50,000 rearrangements. For smaller datasets, we recommend increasing the bin_length parameter and increasing the FDR. 
 
-Another option for smaller datsets is generating and loading in the background model using the PCAWG rearrangements (provided in this repo). Afterwards, rearrangements in the new dataset that occur at a higher frequency than the PCAWG background rate can be detected. 
+Another option for smaller datasets is generating and loading in the background model using the PCAWG rearrangements (provided in this repo). Afterwards, rearrangements in the new dataset that occur at a higher frequency than the PCAWG background rate can be detected. 
 
 
 

@@ -8,6 +8,7 @@ global CHR
 global bins_event_tble
 global genome_build
 global bin_length
+global BIN_SHIFT
 
 global TRACK_PATHS
 global LOW_DENSITY_THRESHOLD
@@ -62,8 +63,8 @@ input_columns = struct( ...
 
 % set bins boundries 
 % returns a table of bins with chr number, start and end position, and number of breakpoints per bin
-%[bins0, numbins] = SetBins(events0,num_breakpoints_per_bin,chromosome_sizes,CHR,min_bin_dist); 
-[bins0, numbins] = SetBins_bylength(events0, bin_length, chromosome_sizes,CHR); 
+%[bins0, numbins] = SetBins(events0,num_breakpoints_per_bin,chromosome_sizes,CHR,min_bin_dist);
+[bins0, numbins] = SetBins_bylength(events0, bin_length, chromosome_sizes, CHR, BIN_SHIFT);
 
 % 2026/02/17: exported bins0 as the bin boundary definitions, before we
 % drop the empty bins
