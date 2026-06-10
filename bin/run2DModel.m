@@ -134,13 +134,14 @@ function hits_table = run2DModel(varargin)
     end
 
     save_bin_index = getOpt(cfg, 'save_bin_index', false);
+    save_per_run_output = getOpt(cfg, 'save_per_run_output', false);
 
     % Print parameters to log file for reproducibility and debugging.
     printRunParameters(work_dir, sv_file, output_file, model_exist, model_file, ...
                        complex_model, weights, std_filter, len_filter, ...
                        fdr_threshold, tier_std_cutoff, ...
                        num_breakpoints_per_bin, bin_length_value, n_binshifts, max_workers_override, chr_list, ...
-                       genome_build_value, random_seed, save_bin_index, ...
+                       genome_build_value, random_seed, save_bin_index, save_per_run_output, ...
                        low_density_threshold_value, supercluster_distance_threshold, resolved_tracks);
 
     global WorkDir
@@ -199,6 +200,7 @@ function hits_table = run2DModel(varargin)
 
     hits_by_shift = cell(total_runs, 1);
     bins_by_shift = cell(total_runs, 1);
+    completed_runs = 0;
 
     % Prefer parallel execution when there are multiple runs and enough
     % worker capacity. Fall back to serial on toolbox/license/runtime issues.
@@ -208,6 +210,8 @@ function hits_table = run2DModel(varargin)
         if can_parallel
             try
                 ensureParpoolSize(target_workers);
+                progress_queue = parallel.pool.DataQueue;
+                afterEach(progress_queue, @onShiftRunCompleted);
                 parfor run_idx = 1:total_runs
                     shift_bp = shift_values(run_idx);
                     % A zero shift means legacy binning mode; nonzero shifts
@@ -217,6 +221,7 @@ function hits_table = run2DModel(varargin)
                         sv_file, model_exist, complex_model, weights, len_filter, ...
                         fdr_threshold, bin_length_value, num_breakpoints_per_bin, ...
                         std_filter, model_file, tier_std_cutoff, run_context, shift_arg);
+                    send(progress_queue, [run_idx, shift_bp]);
                 end
                 ran_in_parallel = true;
             catch parallel_err
@@ -236,6 +241,9 @@ function hits_table = run2DModel(varargin)
                 sv_file, model_exist, complex_model, weights, len_filter, ...
                 fdr_threshold, bin_length_value, num_breakpoints_per_bin, ...
                 std_filter, model_file, tier_std_cutoff, run_context, shift_arg);
+            completed_runs = completed_runs + 1;
+            fprintf('[run2DModel] completed shift run %d/%d (run_idx=%d, shift_bp=%d)\n', ...
+                completed_runs, total_runs, run_idx, shift_bp);
         end
     end
 
@@ -257,6 +265,18 @@ function hits_table = run2DModel(varargin)
     % Write output table
     writetable(hits_table, output_file, 'delimiter', '\t');
 
+    % Optionally save per-run output tables (only meaningful for multi-run bin-shift mode).
+    if save_per_run_output && total_runs > 1
+        [out_dir, out_base, out_ext] = fileparts(output_file);
+        for run_idx = 1:total_runs
+            shift_bp = shift_values(run_idx);
+            per_run_file = fullfile(out_dir, sprintf('%s%s.shift%d_bp%d.tsv', out_base, out_ext, run_idx - 1, shift_bp));
+            per_run_table = matchOutputSchema(hits_by_shift{run_idx});
+            writetable(per_run_table, per_run_file, 'Delimiter', '\t');
+            fprintf('[run2DModel] per-run output written to: %s\n', per_run_file);
+        end
+    end
+
     % Optionally save bin indices to sidecar files.
     if save_bin_index
         [out_dir, out_base, out_ext] = fileparts(output_file);
@@ -274,6 +294,12 @@ function hits_table = run2DModel(varargin)
                 fprintf('[run2DModel] bin indices written to: %s\n', bin_index_file);
             end
         end
+    end
+
+    function onShiftRunCompleted(payload)
+        completed_runs = completed_runs + 1;
+        fprintf('[run2DModel] completed shift run %d/%d (run_idx=%d, shift_bp=%d)\n', ...
+            completed_runs, total_runs, payload(1), payload(2));
     end
 
 end
@@ -338,6 +364,8 @@ function cfg = parseCliArgs(args)
                 cfg.random_seed = str2double(char(value));
             case {'-bix', '--save_bin_index'}
                 cfg.save_bin_index = parseLogical(value);
+            case {'-per_run', '--save_per_run_output'}
+                cfg.save_per_run_output = parseLogical(value);
             case {'-ref_genes', '--ref_genes_file'}
                 cfg.ref_genes_file = char(value);
             case {'-cancer_genes', '--cancer_genes_file'}
@@ -476,6 +504,10 @@ function printHelp()
     fprintf('                                              final filtered output table for that shift.\n');
     fprintf('                                              Filename: <output>.bin_indices.shift<N>bp<ext>.\n');
     fprintf('                                              default=false\n');
+    fprintf('  -per_run, --save_per_run_output    [bool]   Write a separate per-run output TSV for each bin-shift run\n');
+    fprintf('                                              alongside the merged output. Only used when n_binshifts > 0.\n');
+    fprintf('                                              Filename: <output>.shift<N>_bp<S>.tsv\n');
+    fprintf('                                              default=false\n');
     fprintf('  -h, --help                                  Show this help and exit.\n\n');
 end
 
@@ -491,7 +523,7 @@ function printRunParameters(work_dir, sv_file, output_file, model_exist, model_f
                             complex_model, weights, std_filter, len_filter, ...
                             fdr_threshold, tier_std_cutoff, ...
                             num_breakpoints_per_bin, bin_length_value, n_binshifts, max_workers_override, chr_list, ...
-                            genome_build_value, random_seed, save_bin_index, ...
+                            genome_build_value, random_seed, save_bin_index, save_per_run_output, ...
                             low_density_threshold_value, supercluster_distance_threshold, resolved_tracks)
     fprintf('\n[run2DModel] effective parameters\n');
     fprintf('--work_dir=%s\n', work_dir);
@@ -515,6 +547,7 @@ function printRunParameters(work_dir, sv_file, output_file, model_exist, model_f
     fprintf('--genome_build=%s\n', genome_build_value);
     fprintf('--random_seed=%s\n', seedToText(random_seed));
     fprintf('--save_bin_index=%s\n', boolToText(save_bin_index));
+    fprintf('--save_per_run_output=%s\n', boolToText(save_per_run_output));
     fprintf('--resolved track files:\n');
     fprintf('  ref_genes_file=%s\n', emptyToNA(resolved_tracks.ref_genes_file));
     fprintf('  cancer_genes_file=%s\n', emptyToNA(resolved_tracks.cancer_genes_file));
@@ -726,9 +759,8 @@ function merged_hits = mergeShiftedRunsIntoSuperclusters(hits_by_shift, shift_va
             super_tier_rank(comp_idx) = 3;
         end
 
-        super_keep(comp_idx) = (super_nsamples(comp_idx) > 1) && ...
-                              (super_std_i(comp_idx) > std_filter) && ...
-                              (super_std_j(comp_idx) > std_filter);
+        % No post-merge filtering: per-run filtering already gatekept quality.
+        % All SVs from every run are preserved in the merged output.
     end
 
     all_hits.num_hits = super_nsamples(row_component);
@@ -748,6 +780,8 @@ function merged_hits = mergeShiftedRunsIntoSuperclusters(hits_by_shift, shift_va
     [unique_sv_keys, ~, sv_idx] = unique(all_hits(:, sv_key_cols), 'rows', 'stable');
     sv_cluster_ids = strings(height(unique_sv_keys), 1);
     sv_cluster_tiers = strings(height(unique_sv_keys), 1);
+    sv_bin_i = strings(height(unique_sv_keys), 1);
+    sv_bin_j = strings(height(unique_sv_keys), 1);
     sv_tile_qval = strings(height(unique_sv_keys), 1);
     sv_pval = strings(height(unique_sv_keys), 1);
     sv_prob = strings(height(unique_sv_keys), 1);
@@ -770,8 +804,10 @@ function merged_hits = mergeShiftedRunsIntoSuperclusters(hits_by_shift, shift_va
         tuple_text = arrayfun(@(r) sprintf('(%d, %d)', tuple_rows(r,1), tuple_rows(r,2)), ...
                               1:size(tuple_rows,1), 'UniformOutput', false);
 
-        % Extract tier, tile_qval, pval, prob for each tuple in order, matching the tuple creation.
+        % Extract per-cluster fields in tuple order to keep mapping stable.
         sv_tiers_ordered = {};
+        sv_bin_i_ordered = {};
+        sv_bin_j_ordered = {};
         sv_tile_qval_ordered = {};
         sv_pval_ordered = {};
         sv_prob_ordered = {};
@@ -782,6 +818,8 @@ function merged_hits = mergeShiftedRunsIntoSuperclusters(hits_by_shift, shift_va
                             all_hits.run_cluster_num(sv_rows) == cluster_num_val, 1, 'first');
             sv_rows_indices = find(sv_rows);
             sv_tiers_ordered{t} = char(all_hits.supercluster_tier{sv_rows_indices(idx_match)});
+            sv_bin_i_ordered{t} = sprintf('%d', all_hits.bin_i(sv_rows_indices(idx_match)));
+            sv_bin_j_ordered{t} = sprintf('%d', all_hits.bin_j(sv_rows_indices(idx_match)));
             sv_tile_qval_ordered{t} = sprintf('%.4g', all_hits.tile_qval(sv_rows_indices(idx_match)));
             sv_pval_ordered{t} = sprintf('%.4g', all_hits.pval(sv_rows_indices(idx_match)));
             sv_prob_ordered{t} = sprintf('%.4g', all_hits.prob(sv_rows_indices(idx_match)));
@@ -789,6 +827,8 @@ function merged_hits = mergeShiftedRunsIntoSuperclusters(hits_by_shift, shift_va
 
         sv_cluster_ids(sv_i) = strjoin(tuple_text, ', ');
         sv_cluster_tiers(sv_i) = strjoin(sv_tiers_ordered, ', ');
+        sv_bin_i(sv_i) = strjoin(sv_bin_i_ordered, ', ');
+        sv_bin_j(sv_i) = strjoin(sv_bin_j_ordered, ', ');
         sv_tile_qval(sv_i) = strjoin(sv_tile_qval_ordered, ', ');
         sv_pval(sv_i) = strjoin(sv_pval_ordered, ', ');
         sv_prob(sv_i) = strjoin(sv_prob_ordered, ', ');
@@ -801,13 +841,12 @@ function merged_hits = mergeShiftedRunsIntoSuperclusters(hits_by_shift, shift_va
     [~, merged_sv_idx] = ismember(merged_hits(:, sv_key_cols), unique_sv_keys, 'rows');
     merged_hits.sv_cluster_ids = cellstr(sv_cluster_ids(merged_sv_idx));
     merged_hits.sv_cluster_tiers = cellstr(sv_cluster_tiers(merged_sv_idx));
+    merged_hits.sv_bin_i = cellstr(sv_bin_i(merged_sv_idx));
+    merged_hits.sv_bin_j = cellstr(sv_bin_j(merged_sv_idx));
     merged_hits.sv_tile_qval = cellstr(sv_tile_qval(merged_sv_idx));
     merged_hits.sv_pval = cellstr(sv_pval(merged_sv_idx));
     merged_hits.sv_prob = cellstr(sv_prob(merged_sv_idx));
     merged_hits.supercluster_cluster_ids = cellstr(supercluster_cluster_tuples(merged_hits.cluster_num));
-
-    keep_rows = super_keep(merged_hits.cluster_num);
-    merged_hits = merged_hits(keep_rows, :);
 
     if ~isempty(merged_hits)
         merged_hits = sortrows(merged_hits, {'chr_i', 'pos_i', 'chr_j', 'pos_j'});
@@ -875,6 +914,7 @@ function output_table = matchOutputSchema(input_table)
 
     % Ensure critical columns exist in expected order.
     expected_cols = {'supercluster_id', 'sv_cluster_ids', 'sv_cluster_tiers', ...
+                     'sv_bin_i', 'sv_bin_j', ...
                      'sv_tile_qval', 'sv_pval', 'sv_prob', ...
                      'supercluster_cluster_ids', 'supercluster_tier', 'supercluster_pval', ...
                      'supercluster_prob', 'supercluster_nsamples', 'shifts_found_count'};
@@ -886,7 +926,7 @@ function output_table = matchOutputSchema(input_table)
     end
 
     % Remove redundant or deprecated columns.
-    deprecated_cols = {'tier', 'sv_run_cluster_ids', 'sv_shift_cluster_tuples', 'cluster_num', 'num_hits'};
+    deprecated_cols = {'tier', 'sv_run_cluster_ids', 'sv_shift_cluster_tuples', 'cluster_num', 'num_hits', 'bin_i', 'bin_j'};
     for col = deprecated_cols
         col_name = col{1};
         if any(strcmp(output_table.Properties.VariableNames, col_name))

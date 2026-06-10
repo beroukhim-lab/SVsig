@@ -36,20 +36,12 @@ if issymmetric(mfull)
     mfull(eye(size(mfull))==1)=diag(mfull)/2;
 end
 
-%export mfull, model1, model2, annot_tiles to optimize alphas and calculate
-%background matrix in R
-%Need to do this because we are calculating the log likelihood with the
-%continous binomial and the density function for cbinom is in R 
- if complex && weights   
-     save('debug_alpha')
-     % for 1MB somatic distance cutoff in Xiatong's promiximity matrix
-     %load('/Volumes/xchip_beroukhimlab/Kiran/git/2dmodel/SVsig/cbinom_alpha.mat');
-     load('/Users/shu/SVsig_labcopy/cbinom_alpha.mat');
-
-     %for 50 kb somatic distance cutoff in X's prox matrix 
-     %load('2020021050kbcbinom_alpha.mat')   
-     disp('loading continous binomial alpha parameters')
- else 
+% Complex weighted events previously required pausing to run an R script.
+% This path now optimizes alpha directly in MATLAB (no manual handoff).
+ if complex && weights
+     disp('optimizing complex weighted alpha parameters in MATLAB')
+     [opt_alpha, f_bic] = mix_model_alpha(mfull, model1, model2, annot_tiles, num_param);
+ else
 %calculating log factorial--faster than calculating factorial then taking
 %the log2
 disp('calculating poisson log likelihood approximation')

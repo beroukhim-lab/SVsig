@@ -209,6 +209,8 @@ original_cluster_num = hits_table.cluster_num;
 hits_table.supercluster_id = remapped_cluster_idx;
 hits_table.sv_cluster_ids = cellstr(string(zeros(height(hits_table), 1)));
 hits_table.sv_cluster_tiers = tier;
+hits_table.sv_bin_i = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.sv_bin_j = cellstr(string(zeros(height(hits_table), 1)));
 hits_table.sv_tile_qval = cellstr(string(zeros(height(hits_table), 1)));
 hits_table.sv_pval = cellstr(string(zeros(height(hits_table), 1)));
 hits_table.sv_prob = cellstr(string(zeros(height(hits_table), 1)));
@@ -220,6 +222,8 @@ hits_table.shifts_found_count = repmat(1, height(hits_table), 1);
 for i = 1:height(hits_table)
     tuple_str = sprintf('(0, %d)', original_cluster_num(i));
     hits_table.sv_cluster_ids{i} = tuple_str;
+    hits_table.sv_bin_i{i} = sprintf('%d', hits_table.bin_i(i));
+    hits_table.sv_bin_j{i} = sprintf('%d', hits_table.bin_j(i));
     hits_table.sv_tile_qval{i} = sprintf('%.4g', hits_table.tile_qval(i));
     hits_table.sv_pval{i} = sprintf('%.4g', hits_table.pval(i));
     hits_table.sv_prob{i} = sprintf('%.4g', hits_table.prob(i));
@@ -230,8 +234,8 @@ end
 keep = ismember(hits_table.cluster_num, clusters_to_keep);
 hits_table = hits_table(keep, :);
 
-% Remove the old cluster_num to avoid confusion.
-hits_table.cluster_num = [];
+% Keep cluster_num for downstream multi-run supercluster merging.
+% It is removed from final user-facing output by run2DModel.matchOutputSchema.
 
 disp(strcat('the number of hits post-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
 

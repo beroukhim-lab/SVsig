@@ -35,43 +35,104 @@ No additional columns are required. Inputs may contain extra columns, and SVsig 
 
 <br>
 
-### Simple Rearrangements Model (_SVsig-2D_)
+### Run With cfg (MATLAB)
 
-_SVsig-2D_ considers each rearrangement to occur independently of each other.
-- Open `bin/run2DModel.m`
-  - Set the paths to the working directory, rearrangements file you wish to analyze, and output destination file
-  - Ensure: **complex**, **weights**, and **model_exist** parameters are false
-  - Run `run2DModel.m`
+`run2DModel` accepts a configuration struct, so you do not need to edit source files.
+
+Simple model (_SVsig-2D_):
+
+```matlab
+cfg = struct();
+cfg.work_dir = pwd;
+cfg.sv_file = 'path/to/input.csv';
+cfg.output_file = 'path/to/output.tsv';
+
+cfg.complex_model = false;
+cfg.weights = false;
+cfg.model_exist = false;
+
+hits = run2DModel(cfg);
+```
+
+Complex model (_SVsig-2Dc_):
+
+```matlab
+cfg = struct();
+cfg.work_dir = pwd;
+cfg.sv_file = 'path/to/input.csv';
+cfg.output_file = 'path/to/output.tsv';
+
+cfg.complex_model = true;
+cfg.weights = true;
+cfg.model_exist = false;
+
+hits = run2DModel(cfg);
+```
+
+If you already have a precomputed model:
+
+```matlab
+cfg.model_exist = true;
+cfg.model_file = 'path/to/background_model.mat';
+```
 
 <br>
 
-### Complex Rearrangements Model (_SVsig-2Dc_) 
-_SVsig-2Dc_ accounts for novel connections that arise from neighboring rearrangements. 
+### Run With CLI Flags
 
-- To first identify neighboring rearrangements, run [JaBbA](https://github.com/mskilab-org/JaBbA) to obtain a juxtapositions file.
+`run2DModel` also supports flags (useful for compiled/batch runs). For example:
 
-- Open `bin/run2DModel.m`
-  - Set the paths to the working directory, rearrangements file you wish to analyze, and output destination file
-  - Set the **weights** and **complex** parameters to true. 
-  - Run `run2DModel.m`
-  - After line 44 in `mix_model_param.m`, run `mix_model_alpha.R`
-  - Continue running `mix_model_param.m` until completion
+```bash
+run2DModel -sv path/to/input.csv -out path/to/output.tsv -bin 1e6 -fdr 0.01 - bix true
+```
+
+Common flags:
+- `-sv`, `--sv_file` input CSV (required)
+- `-out`, `--output_file` output TSV (required)
+- `-wd`, `--work_dir` project root
+- `-complex`, `--complex_model` true/false
+- `-weights`, `--weights` true/false
+- `-model_exist`, `--model_exist` true/false
+- `-model`, `--model_file` precomputed model path
+- `-bin`, `--bin_length` bin length
+- `-fdr`, `--fdr_threshold` BH-FDR cutoff
+- `-nshift`, `--n_binshifts` number of additional shifted runs
+- `-maxw`, `--max_workers` parallel worker cap
+- `-scdist`, `--supercluster_distance_threshold` supercluster merge distance (bp)
+- `-genome`, `--genome_build` genome build (`hg_19` or `hg38` based tracks)
+- `-h`, `--help` print full option help
 
 <br>
 
-### Additional parameters (set in run2DModel.m)
-- **model_exist**: Boolean to skip model training and use a pre-determined background model. If True, set the **background_model_path** parameter to point to a pre-trained model file (for either simple or complex model mode). 
-- **len_filter**: Only considers rearrangements above this length for calculating significance. Default is 1Mb. 
-- **fdr_threshold**: FDR threshold for determining significance. 
-- **output_file**: Path to output file. 
-- **complex**: Boolean to run _SVsig-2Dc_ (complex model). 
-- **num_breakpoints_per_bin**: Average number of breakpoints within a bin. Determines bin boundaries so that each tile has approximately this number of breakpoints. Currently not used.
-- **bin_length**: Length of bin to divide genome. Suggested ranges are 500kb - 2Mb. Note that the number of calculations scales quadratically as bin_length decreases. 
-- **weights**: Weight given to each individual connection, ranges from 0-1. Weight=1 for the simple model. For the complex model, weights are obtained from the juxtapositions file after running [JaBbA](https://github.com/mskilab-org/JaBbA).
-- **genome_build**: 'hg19' or 'hg38'.
-- **n_binshifts**: Number of additional bin-shift runs to perform. Default is 0 (no bin-shifting). Each shift tests the robustness of cluster detection by offsetting bin boundaries. When n_binshifts > 0, results from all runs are merged into superclusters based on spatial proximity.
-- **max_workers_override**: Maximum number of parallel workers for bin-shift runs. If empty or 0, automatically detected from system CPU count. Only used when n_binshifts > 0.
-- **supercluster_distance_threshold**: Distance threshold (in bp) for merging clusters across bin-shifted runs. Default is 50000 bp. Clusters are considered part of the same supercluster if both breakpoints are within this distance on both breakpoint coordinates.
+### Hyperparameters (cfg keys / CLI equivalents)
+
+Core model:
+- `complex_model` (`-complex`): enable complex model mode
+- `weights` (`-weights`): use per-rearrangement weights
+- `model_exist` (`-model_exist`): load precomputed background model
+- `model_file` (`-model`): background model path when `model_exist=true`
+
+Filtering and significance:
+- `fdr_threshold` (`-fdr`): BH-FDR significance cutoff
+- `len_filter` (`-len`): minimum SV span used in filtering
+- `std_filter` (`-std`): recurrence spread filter threshold
+- `tier_std_cutoff` (`-tier`): cutoff used for tier assignment
+- `low_density_threshold` (`-ldt`): low-density bin removal threshold
+
+Binning and superclustering:
+- `bin_length` (`-bin`): bin size
+- `num_breakpoints_per_bin` (`-nbpb`): breakpoint target per bin
+- `n_binshifts` (`-nshift`): additional shifted runs
+- `supercluster_distance_threshold` (`-scdist`): max breakpoint distance for merging clusters
+
+Runtime and tracks:
+- `max_workers` (`-maxw`): max parallel workers
+- `chr_list` (`-chr`): chromosomes to include
+- `genome_build` (`-genome`): genome build for track resolution
+- `random_seed` (`-seed`): reproducibility seed
+- `save_bin_index` (`-bix`): write bin-index sidecar files
+- `ref_genes_file`, `cancer_genes_file`, `curated_fusions_file`, `chrom_sizes_file`, `blacklist_file`, `l1_elements_file`: optional track file overrides
+
 <br>
 
 ### Bin-Shifting Mode
@@ -81,6 +142,9 @@ When `n_binshifts > 0`, _SVsig_ runs the model multiple times with different bin
 - **Runs 1 to n_binshifts**: Each run applies a fractional offset k/(n_binshifts+1) of the bin_length, creating alternative binning schemes.
 - **Merging**: After filtering per-run results, clusters from all runs are merged into superclusters based on proximity thresholds on both breakpoint coordinates.
 - **Output**: Single merged table with supercluster IDs, per-SV cluster tracking (sv_cluster_ids, sv_cluster_tiers), and multi-run statistics.
+
+### Outputs
+
 _SVsig-2D_ and _SVsig-2Dc_ output a TSV where each row is a rearrangement assigned to a significantly recurrent cluster. Output columns are:
 
 **Cluster and Supercluster Identification:**
@@ -100,7 +164,7 @@ _SVsig-2D_ and _SVsig-2Dc_ output a TSV where each row is a rearrangement assign
 - **all_genes_i, all_genes_j**: Full nearby-gene lists before prioritization/truncation.
 
 **Genomic Coordinates:**
-- **bin_i, bin_j**: Bin IDs for each breakpoint.
+- **sv_bin_i, sv_bin_j**: Comma-separated bin IDs for each cluster where the SV appears, in matching order with `sv_cluster_ids`.
 - **chr_i, pos_i, strand_i**: Breakpoint i chromosome, position, and strand.
 - **chr_j, pos_j, strand_j**: Breakpoint j chromosome, position, and strand.
 - **sv_class**: SV class derived from chromosome and strand orientation:
@@ -123,23 +187,47 @@ _SVsig-2D_ and _SVsig-2Dc_ output a TSV where each row is a rearrangement assign
 
 ## Tutorial
 
-To ensure that _SVsig_ is installed and running properly, we will run the file `data/TUTORIAL_rearrangements.csv`, which contains a random sampling of 100,000 rearrangements from the dataset in the manuscript. Change the following parameters (use the default for the remaining parameters) and run _SVsig_-2D:
+To verify your installation, run _SVsig-2D_ on `data/TUTORIAL_rearrangements.csv` (100,000 sampled rearrangements):
 
-- **bin_length**: 1e6
-- **fdr_threshold**: 0.01
+```matlab
+cfg = struct();
+cfg.work_dir = pwd;
+cfg.sv_file = 'data/TUTORIAL_rearrangements.csv';
+cfg.output_file = 'results/tutorial_output.tsv';
+cfg.complex_model = false;
+cfg.model_exist = false;
+cfg.bin_length = 1e6;
+cfg.fdr_threshold = 0.01;
+run2DModel(cfg);
+```
 
-Runtime was measured to be around 7 minutes on a standard laptop with 16GB RAM. The expected output file is shown at `results/TUTORIAL_hitsalljunctions_fdr0.01_1e6bins.txt`. 
+Equivalent CLI invocation:
 
-To recreate the results in the manuscript from _SVsig-2D_, use the `data/merged_1.6.1.csv` file, which includes the full set of nearly 300,000 rearrangements from the PCAWG cohort. Additionally, use the following parameters: 
+```bash
+run2DModel -sv data/TUTORIAL_rearrangements.csv -out results/tutorial_output.tsv -complex false -model_exist false -bin 1e6 -fdr 0.01
+```
 
-- **bin_length**: 5e5
-- **fdr_threshold**: 0.1
+Runtime is typically around 7 minutes on a standard laptop with 16GB RAM. A representative expected output is available at `results/TUTORIAL_hitsalljunctions_fdr0.01_1e6bins.txt`.
+
+To recreate manuscript-scale _SVsig-2D_ runs with `data/merged_1.6.1.csv` (~300,000 rearrangements), use:
+
+```matlab
+cfg = struct();
+cfg.work_dir = pwd;
+cfg.sv_file = 'data/merged_1.6.1.csv';
+cfg.output_file = 'results/merged_1.6.1_hits.tsv';
+cfg.complex_model = false;
+cfg.model_exist = false;
+cfg.bin_length = 5e5;
+cfg.fdr_threshold = 0.1;
+run2DModel(cfg);
+```
 
 ## Troubleshooting
 
-Common issues with running _SVsig_ often involve the number of rearrangements in your dataset. _SVsig_ requires a large number of rearrangements since they become sparse once distributed across the genome-wide adjacency matrix. Additionally, at least one rearrangement needs to exist on every chromosome. Ideally, there are at least 100,000 rearrangements in your dataset, although we have run _SVsig_ with data containing only 50,000 rearrangements. For smaller datasets, we recommend increasing the bin_length parameter and increasing the FDR. 
+Common issues with running _SVsig_ often involve the number of rearrangements in your dataset. _SVsig_ performs best with large cohorts of rearrangements because events become sparse once distributed across the genome-wide adjacency matrix. Ideally, there are at least 100,000 rearrangements in your dataset, although we have run _SVsig_ with data containing only 50,000 rearrangements. For smaller datasets, we recommend increasing the bin_length parameter and increasing the FDR. 
 
-Another option for smaller datasets is generating and loading in the background model using the PCAWG rearrangements (provided in this repo). Afterwards, rearrangements in the new dataset that occur at a higher frequency than the PCAWG background rate can be detected. 
+Another option for smaller datasets is generating and loading in the background model using the PCAWG rearrangements (provided in this repo) or another pre-generated background model complementary to your dataset. Afterwards, rearrangements in the new dataset that occur at a higher frequency than the PCAWG (or other) background rate can be detected. 
 
 
 
