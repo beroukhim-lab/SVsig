@@ -18,7 +18,7 @@
 %   cfg = struct();
 %   cfg.work_dir = '/path/to/SVsig';
 %   cfg.sv_file = '/path/to/input.csv';
-%   cfg.output_file = '/path/to/output.tsv';
+%   cfg.output_file = '/path/to/output.txt';
 %   cfg.model_exist = false;  % set true only when cfg.model_file is provided
 %   run2DModel(cfg);
 %
@@ -263,16 +263,16 @@ function hits_table = run2DModel(varargin)
     hits_table = matchOutputSchema(hits_table);
 
     % Write output table
-    writetable(hits_table, output_file, 'delimiter', '\t');
+    writetable(hits_table, output_file);
 
     % Optionally save per-run output tables (only meaningful for multi-run bin-shift mode).
     if save_per_run_output && total_runs > 1
         [out_dir, out_base, out_ext] = fileparts(output_file);
         for run_idx = 1:total_runs
             shift_bp = shift_values(run_idx);
-            per_run_file = fullfile(out_dir, sprintf('%s%s.shift%d_bp%d.tsv', out_base, out_ext, run_idx - 1, shift_bp));
+            per_run_file = fullfile(out_dir, sprintf('%s%s.shift%d_bp%d.txt', out_base, out_ext, run_idx - 1, shift_bp));
             per_run_table = matchOutputSchema(hits_by_shift{run_idx});
-            writetable(per_run_table, per_run_file, 'Delimiter', '\t');
+            writetable(per_run_table, per_run_file);
             fprintf('[run2DModel] per-run output written to: %s\n', per_run_file);
         end
     end
@@ -439,7 +439,7 @@ function printHelp()
     fprintf('\nUsage: run2DModel [OPTIONS]\n\n');
     fprintf('Required:\n');
     fprintf('  -sv,  --sv_file                    [path]   Input SV CSV file.\n');
-    fprintf('  -out, --output_file                [path]   Output TSV file to write.\n\n');
+    fprintf('  -out, --output_file                [path]   Output tab-separated file to write.\n\n');
 
     fprintf('Model Parameters:\n');
     fprintf('  -model_exist, --model_exist        [bool]   If true, load a pre-computed model_file.\n');
@@ -504,9 +504,9 @@ function printHelp()
     fprintf('                                              final filtered output table for that shift.\n');
     fprintf('                                              Filename: <output>.bin_indices.shift<N>bp<ext>.\n');
     fprintf('                                              default=false\n');
-    fprintf('  -per_run, --save_per_run_output    [bool]   Write a separate per-run output TSV for each bin-shift run\n');
+    fprintf('  -per_run, --save_per_run_output    [bool]   Write a separate per-run output tab-separated file for each bin-shift run\n');
     fprintf('                                              alongside the merged output. Only used when n_binshifts > 0.\n');
-    fprintf('                                              Filename: <output>.shift<N>_bp<S>.tsv\n');
+    fprintf('                                              Filename: <output>.shift<N>_bp<S>.txt\n');
     fprintf('                                              default=false\n');
     fprintf('  -h, --help                                  Show this help and exit.\n\n');
 end
