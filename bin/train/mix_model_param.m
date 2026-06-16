@@ -54,28 +54,32 @@ BIC = zeros(3,1);
 alphas = zeros(3,4);
 
 for k1 = 1:3
-nume=sum(mfull(:));
-alpha=rand(num_param,1);
-nume_1 = sum(mfull(annot_tiles(:,:,1)));
-nume_2 = sum(mfull(annot_tiles(:,:,2)));
-nume_3 = sum(mfull(annot_tiles(:,:,3)));
-%nume_4 = sum(mfull(annot_tiles(:,:,4)));
-% optimize over model
-%fincom
+    nume=sum(mfull(:));
+    alpha=rand(num_param,1);
+    nume_1 = sum(mfull(annot_tiles(:,:,1)));
+    nume_2 = sum(mfull(annot_tiles(:,:,2)));
+    nume_3 = sum(mfull(annot_tiles(:,:,3)));
+    %nume_4 = sum(mfull(annot_tiles(:,:,4)));
+    % optimize over model
+    %fincom
 
-%repeat ten times to check for stability
-%each row is a new iteration
+    %repeat ten times to check for stability
+    %each row is a new iteration
 
-options = optimoptions('fmincon','DiffMinChange',1e-6,'TolFun',1e-1,'TolX',1e-6);
+    options = optimoptions('fmincon','DiffMinChange',1e-6,'TolFun',1e-1,'TolX',1e-6);
 
-[opt_alpha, f_bic] = fmincon(@mix_optim_fun,alpha,[],[],[],[],zeros(num_param,1),ones(num_param,1),[],options);
+    [opt_alpha, f_bic] = fmincon(@mix_optim_fun,alpha,[],[],[],[],zeros(num_param,1),ones(num_param,1),[],options);
 
-alphas(k1, :) = opt_alpha;
-BIC(k1, :) = f_bic;
+    alphas(k1, :) = opt_alpha;
+    BIC(k1, :) = f_bic;
 
-end 
+    end 
+
+    % Find the iteration that produced the true minimum BIC score
+    [~, best_idx] = min(BIC);
+    opt_alpha = alphas(best_idx, :);
  
- end 
+end 
  
  
  

@@ -20,6 +20,7 @@ mfull00=mfull{1}+mfull{2}+mfull{3}+mfull{4};
 
 
 disp(strcat('optimal alpha', num2str(opt_alpha)));
-save('20240719_testmodel.mat')
+% 2026/06/11: TODO change this to save the path dynamically based on the model name and parameters, rather than hardcoding a filename
+% save('20240719_testmodel.mat')
 
 
