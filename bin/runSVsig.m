@@ -53,6 +53,9 @@ end
 if isfield(run_context, 'low_density_threshold')
     LOW_DENSITY_THRESHOLD = run_context.low_density_threshold;
 end
+if isfield(run_context, 'random_seed') && ~isempty(run_context.random_seed)
+    rng(double(run_context.random_seed), 'twister');
+end
 FDR_THRESHOLD = fdr_threshold;
 BIN_SHIFT = bin_shift;
 complex = complex_model;

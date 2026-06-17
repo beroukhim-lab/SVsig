@@ -184,6 +184,10 @@ function hits_table = run2DModel(varargin)
         'track_paths', resolved_tracks, ...
         'low_density_threshold', low_density_threshold_value);
 
+    if ~isempty(random_seed)
+        run_context.base_random_seed = double(random_seed);
+    end
+
     % Build the shift schedule:
     % run 0 is always the baseline (no shift), and additional runs are
     % fractional shifts of bin_length (k/(n_binshifts+1)).
@@ -217,10 +221,14 @@ function hits_table = run2DModel(varargin)
                     % A zero shift means legacy binning mode; nonzero shifts
                     % trigger the shifted-bin path in SetBins_bylength.
                     shift_arg = normalizeShiftArg(shift_bp);
+                    local_run_context = run_context;
+                    if isfield(local_run_context, 'base_random_seed')
+                        local_run_context.random_seed = local_run_context.base_random_seed + (run_idx - 1);
+                    end
                     [hits_by_shift{run_idx}, bins_by_shift{run_idx}] = runSVsig( ...
                         sv_file, model_exist, complex_model, weights, len_filter, ...
                         fdr_threshold, bin_length_value, num_breakpoints_per_bin, ...
-                        std_filter, model_file, tier_std_cutoff, run_context, shift_arg);
+                        std_filter, model_file, tier_std_cutoff, local_run_context, shift_arg);
                     send(progress_queue, [run_idx, shift_bp]);
                 end
                 ran_in_parallel = true;
@@ -237,10 +245,14 @@ function hits_table = run2DModel(varargin)
         for run_idx = 1:total_runs
             shift_bp = shift_values(run_idx);
             shift_arg = normalizeShiftArg(shift_bp);
+            local_run_context = run_context;
+            if isfield(local_run_context, 'base_random_seed')
+                local_run_context.random_seed = local_run_context.base_random_seed + (run_idx - 1);
+            end
             [hits_by_shift{run_idx}, bins_by_shift{run_idx}] = runSVsig( ...
                 sv_file, model_exist, complex_model, weights, len_filter, ...
                 fdr_threshold, bin_length_value, num_breakpoints_per_bin, ...
-                std_filter, model_file, tier_std_cutoff, run_context, shift_arg);
+                std_filter, model_file, tier_std_cutoff, local_run_context, shift_arg);
             completed_runs = completed_runs + 1;
             fprintf('[run2DModel] completed shift run %d/%d (run_idx=%d, shift_bp=%d)\n', ...
                 completed_runs, total_runs, run_idx, shift_bp);
