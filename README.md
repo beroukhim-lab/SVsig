@@ -6,7 +6,7 @@
 
 ## _SVsig_ Install and Dependencies 
 
-SVsig uses MATLAB, which can be obtained [here](https://www.mathworks.com/products/matlab.html). This version has primarily been tested using `MATLAB_R2020a` on macOS Sonoma (14.5) and `MATLAB_R2023b` on x86_64. 
+_SVsig_ uses MATLAB, which can be obtained [here](https://www.mathworks.com/products/matlab.html). This version has primarily been tested using `MATLAB_R2020a` on macOS Sonoma (14.5) and `MATLAB_R2023b` on x86_64. 
 
 Additionally, install the following MATLAB toolboxes:
 - Statistics and Machine Learning Toolbox
@@ -31,7 +31,7 @@ Conditionally required:
 - **weights**: required for meaningful complex-model runs (`complex_model=true`).
   - For simple model runs, if `weights` is missing, SVsig defaults all weights to `1`.
 
-No additional columns are required. Inputs may contain extra columns, and SVsig will ignore them for model fitting.
+No additional columns are required. Inputs may contain extra columns, and _SVsig_ will ignore them for model fitting.
 
 <br>
 
@@ -183,6 +183,110 @@ _SVsig-2D_ and _SVsig-2Dc_ output a TSV where each row is a rearrangement assign
 - **supercluster_nsamples**: Number of unique samples in supercluster.
 - **supercluster_tier**: Tier label (`tier 1/2/3`) based on position spread.
 - **stddev_i, stddev_j**: Position standard deviation at each breakpoint across supercluster SVs.
+
+<br>
+
+## Reference Genome Files and Formats
+
+_SVsig_ requires six reference files for gene annotation, fusion detection, and masking. These files are resolved automatically from `data/tracks/<genome_build>/` based on your `genome_build` parameter, or can be explicitly overridden via cfg or CLI flags.
+
+### File Format Specifications
+
+**Chromosome sizes:**
+- Plain text, tab- or space-separated.
+- Two columns: chromosome identifier and length (bp).
+- Headerless files are accepted; optional header row will be skipped if present.
+- Chromosome names: accepts numeric (1-24), string (chr1-22, chrX, chrY), or mixed formats.
+- Example (headerless): `1  249250621` or `chrX  155270560`
+
+**Reference genome:**
+- Tab-delimited text with required header row (.txt or .txt.gz).
+- Required columns (flexible names):
+  - Chromosome: `chr`, `chrom`, or `chromosome`
+  - Start: `start`, `txStart`, or `chromStart`
+  - End: `end`, `txEnd`, `chromEnd`, or `xEnd`
+  - Gene symbol: `gene_symbol`, `name2`, `gene`, or `symbol`
+- Additional columns are ignored.
+- Example header: `chr	start	end	gene_symbol`
+
+**Cancer genes:**
+- Tab- or comma-delimited text (.tsv, .csv, or .txt); can be gzipped.
+- Single gene-name column, with optional header.
+- Flexible column names: looks for `gene_symbol`, `gene`, `symbol`, or `Gene Symbol`.
+- If no matching column header is found, uses the first column.
+- Fallback: plain text file (one gene name per line; lines starting with `#` are ignored).
+- Example with header: `gene_symbol` followed by gene names.
+- Example headerless: `TP53` on line 1, `BRCA1` on line 2, etc.
+
+**Curated fusions:**
+- Tab-delimited text with required header row (.tsv or .txt, can be gzipped).
+- Two columns for gene pairs with flexible names:
+  - First gene: `gene_A`, `gene1`, or `5prime_gene`
+  - Second gene: `gene_B`, `gene2`, or `3prime_gene`
+- Example header: `gene_A	gene_B`
+
+**Blacklist regions:**
+- BED format (.bed or .bed.gz): tab-separated columns [chromosome, start, end, ...].
+- Headerless (BED standard).
+- Coordinates are 0-based, half-open [start, end) per BED specification.
+- Example: `1	1000	2000` or `chr1	1000	2000`
+
+**L1 elements:**
+- Same format as blacklist regions (BED3 or BED+, headerless, 0-based coordinates).
+- Example: `chrX	500	1500`
+
+### Chromosome Naming
+
+All file loaders accept mixed chromosome naming conventions and automatically normalize them:
+- Numeric: `1`, `2`, `23` (X), `24` (Y)
+- String with chr prefix: `chr1`, `chr2`, `chrX`, `chrY`
+- String without prefix: `1`, `2`, `X`, `Y`
+- Case-insensitive: `X`, `x`, `CHR23` all map to chromosome 23.
+
+Only canonical chromosomes 1-22, X (23), and Y (24) are kept; other entries are ignored.
+
+### Default Sources
+
+The repository contains default reference genome files for hg19 and hg38.
+
+*TODO: Haruna needs to fill this out with sources and citations!* 
+
+| Input File | hg19 (GRCh37) | hg38 (GRCh38) |
+|---|---|---|
+| Chromosome sizes (`chrom_sizes_file`) | **File:** `data/tracks/hg_19/hg19.chrom.sizes`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
+| Reference genome (`ref_genes_file`) | **File:** `data/tracks/hg_19/hg19.ncbiRefSeq.colnames.txt`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
+| Cancer genes (`cancer_genes_file`) | **File:** `data/tracks/hg_19/Cosmic_CancerGeneCensus_v104_GRCh37.tsv`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
+| Curated fusions (`curated_fusions_file`) | **File:** `data/tracks/hg_19/CuratedFusionGene.colnames.txt`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
+| Blacklist regions (`blacklist_file`) | **File:** `data/tracks/hg_19/mask_track.bed`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
+| L1 elements (`l1_elements_file`) | **File:** `data/tracks/hg_19/l1_track.bed`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
+
+### Overriding Track Files
+
+To use custom or alternative track files, specify them via cfg or CLI:
+
+**MATLAB cfg:**
+```matlab
+cfg.ref_genes_file = '/path/to/custom_refgenes.txt';
+cfg.cancer_genes_file = '/path/to/custom_cancer_genes.tsv';
+cfg.curated_fusions_file = '/path/to/custom_fusions.tsv';
+cfg.chrom_sizes_file = '/path/to/custom.chrom.sizes';
+cfg.blacklist_file = '/path/to/custom_blacklist.bed';
+cfg.l1_elements_file = '/path/to/custom_l1.bed';
+```
+
+**CLI flags:**
+```bash
+run2DModel -sv input.csv -out output.tsv \
+  -ref_genes /path/to/custom_refgenes.txt \
+  -cancer_genes /path/to/custom_cancer_genes.tsv \
+  -curated_fusions /path/to/custom_fusions.tsv \
+  -chrom_sizes /path/to/custom.chrom.sizes \
+  -blacklist /path/to/custom_blacklist.bed \
+  -l1 /path/to/custom_l1.bed
+```
+
+If any override is not specified, _SVsig_ falls back to the default path for the specified `genome_build`.
+
 <br>
 
 ## Tutorial

@@ -78,6 +78,7 @@ for k1 = 1:3
     % Find the iteration that produced the true minimum BIC score
     [~, best_idx] = min(BIC);
     opt_alpha = alphas(best_idx, :);
+    f_bic = BIC(best_idx);
  
 end 
  

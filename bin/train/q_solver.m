@@ -63,31 +63,31 @@ p = 2*p/sum(sum(p));
 %check solution
 if stat_out
 
-disp('stats on q');
-disp('-----------------');
-disp(['sum(qsolve) = ' num2str(sum(qsolve))]);
-disp(['min qsolve = ' num2str(min(qsolve(:)))]);
-disp(['max qsolve = ' num2str(max(qsolve(:)))]);
-disp(['mean qsolve = ' num2str(mean(qsolve(:)))]);
-disp(['sum(projected-onto-simplex qe) = ' num2str(sum(qe))]);
-disp(['min qe = ' num2str(min(qe(:)))]);
-disp(['max qe = ' num2str(max(qe(:)))]);
-disp(['mean qe = ' num2str(mean(qe(:)))]);
-disp(['max diff abs(qe-qsolve) = ' num2str(max(abs(qe(:)-qsolve(:))))]);
+    disp('stats on q');
+    disp('-----------------');
+    disp(['sum(qsolve) = ' num2str(sum(qsolve))]);
+    disp(['min qsolve = ' num2str(min(qsolve(:)))]);
+    disp(['max qsolve = ' num2str(max(qsolve(:)))]);
+    disp(['mean qsolve = ' num2str(mean(qsolve(:)))]);
+    disp(['sum(projected-onto-simplex qe) = ' num2str(sum(qe))]);
+    disp(['min qe = ' num2str(min(qe(:)))]);
+    disp(['max qe = ' num2str(max(qe(:)))]);
+    disp(['mean qe = ' num2str(mean(qe(:)))]);
+    disp(['max diff abs(qe-qsolve) = ' num2str(max(abs(qe(:)-qsolve(:))))]);
 
-disp(['final sol: qsum = ' num2str(sum(qe))]);
-
-
+    disp(['final sol: qsum = ' num2str(sum(qe))]);
 
 
-%check solution
-disp('stats on pij');
-disp('-----------------');
-disp(['sum(pij) = ' num2str(sum(sum(p0+p0')))]);
-disp(['sum(normalized pij) = ' num2str(sum(sum(p)))]);
-disp(['min p = ' num2str(min(p(:)))]);
-disp(['max p = ' num2str(max(p(:)))]);
-disp(['mean p = ' num2str(mean(p(:)))]);
+
+
+    %check solution
+    disp('stats on pij');
+    disp('-----------------');
+    disp(['sum(pij) = ' num2str(sum(sum(p0+p0')))]);
+    disp(['sum(normalized pij) = ' num2str(sum(sum(p)))]);
+    disp(['min p = ' num2str(min(p(:)))]);
+    disp(['max p = ' num2str(max(p(:)))]);
+    disp(['mean p = ' num2str(mean(p(:)))]);
 end
 
 
