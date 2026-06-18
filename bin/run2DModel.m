@@ -218,8 +218,6 @@ function hits_table = run2DModel(varargin)
                 afterEach(progress_queue, @onShiftRunCompleted);
                 parfor run_idx = 1:total_runs
                     shift_bp = shift_values(run_idx);
-                    % A zero shift means legacy binning mode; nonzero shifts
-                    % trigger the shifted-bin path in SetBins_bylength.
                     shift_arg = normalizeShiftArg(shift_bp);
                     local_run_context = run_context;
                     if isfield(local_run_context, 'base_random_seed')
@@ -229,6 +227,7 @@ function hits_table = run2DModel(varargin)
                         sv_file, model_exist, complex_model, weights, len_filter, ...
                         fdr_threshold, bin_length_value, num_breakpoints_per_bin, ...
                         std_filter, model_file, tier_std_cutoff, local_run_context, shift_arg);
+                    writeRunArtifacts(hits_by_shift{run_idx}, bins_by_shift{run_idx}, output_file, run_idx, shift_bp, total_runs, save_per_run_output, save_bin_index);
                     send(progress_queue, [run_idx, shift_bp]);
                 end
                 ran_in_parallel = true;
@@ -253,6 +252,7 @@ function hits_table = run2DModel(varargin)
                 sv_file, model_exist, complex_model, weights, len_filter, ...
                 fdr_threshold, bin_length_value, num_breakpoints_per_bin, ...
                 std_filter, model_file, tier_std_cutoff, local_run_context, shift_arg);
+            writeRunArtifacts(hits_by_shift{run_idx}, bins_by_shift{run_idx}, output_file, run_idx, shift_bp, total_runs, save_per_run_output, save_bin_index);
             completed_runs = completed_runs + 1;
             fprintf('[run2DModel] completed shift run %d/%d (run_idx=%d, shift_bp=%d)\n', ...
                 completed_runs, total_runs, run_idx, shift_bp);
@@ -277,35 +277,13 @@ function hits_table = run2DModel(varargin)
     % Write output table
     writetable(hits_table, output_file);
 
-    % Optionally save per-run output tables (only meaningful for multi-run bin-shift mode).
-    if save_per_run_output && total_runs > 1
+    % Optionally save bin indices to sidecar files for the single-run case.
+    % Multi-run artifacts are already written eagerly as each run completes.
+    if save_bin_index && total_runs == 1
         [out_dir, out_base, out_ext] = fileparts(output_file);
-        for run_idx = 1:total_runs
-            shift_bp = shift_values(run_idx);
-            per_run_file = fullfile(out_dir, sprintf('%s%s.shift%d_bp%d.txt', out_base, out_ext, run_idx - 1, shift_bp));
-            per_run_table = matchOutputSchema(hits_by_shift{run_idx});
-            writetable(per_run_table, per_run_file);
-            fprintf('[run2DModel] per-run output written to: %s\n', per_run_file);
-        end
-    end
-
-    % Optionally save bin indices to sidecar files.
-    if save_bin_index
-        [out_dir, out_base, out_ext] = fileparts(output_file);
-        if total_runs == 1
-            % Legacy single-run sidecar filename.
-            bin_index_file = fullfile(out_dir, [out_base, out_ext, '.bin_indices.txt']);
-            writeBinIndicesFile(bins, bin_index_file);
-            fprintf('[run2DModel] bin indices written to: %s\n', bin_index_file);
-        else
-            % Multi-run sidecars include shift metadata in filenames.
-            for run_idx = 1:total_runs
-                shift_bp = shift_values(run_idx);
-                bin_index_file = fullfile(out_dir, [out_base, out_ext, sprintf('.bin_indices.shift%d_bp%d.txt', run_idx - 1, shift_bp)]);
-                writeBinIndicesFile(bins_by_shift{run_idx}, bin_index_file);
-                fprintf('[run2DModel] bin indices written to: %s\n', bin_index_file);
-            end
-        end
+        bin_index_file = fullfile(out_dir, [out_base, out_ext, '.bin_indices.txt']);
+        writeBinIndicesFile(bins, bin_index_file);
+        fprintf('[run2DModel] bin indices written to: %s\n', bin_index_file);
     end
 
     function onShiftRunCompleted(payload)
@@ -691,6 +669,27 @@ function ensureParpoolSize(target_workers)
     if pool.NumWorkers ~= target_workers
         delete(pool);
         parpool(target_workers);
+    end
+end
+
+function writeRunArtifacts(run_hits, run_bins, output_file, run_idx, shift_bp, total_runs, save_per_run_output, save_bin_index)
+    [out_dir, out_base, out_ext] = fileparts(output_file);
+
+    if save_per_run_output && total_runs > 1
+        per_run_file = fullfile(out_dir, sprintf('%s%s.shift%d_bp%d.txt', out_base, out_ext, run_idx - 1, shift_bp));
+        per_run_table = matchOutputSchema(run_hits);
+        writetable(per_run_table, per_run_file);
+        fprintf('[run2DModel] per-run output written to: %s\n', per_run_file);
+    end
+
+    if save_bin_index
+        if total_runs == 1
+            bin_index_file = fullfile(out_dir, [out_base, out_ext, '.bin_indices.txt']);
+        else
+            bin_index_file = fullfile(out_dir, [out_base, out_ext, sprintf('.bin_indices.shift%d_bp%d.txt', run_idx - 1, shift_bp)]);
+        end
+        writeBinIndicesFile(run_bins, bin_index_file);
+        fprintf('[run2DModel] bin indices written to: %s\n', bin_index_file);
     end
 end
 
