@@ -9,7 +9,7 @@ disp('building event matrix...');
 %but I don't see where events are being subsetted
 
 for ca=1:num_annot
-    mfull{ca}=sparse(length(bins),length(bins));
+    mfull{ca}=sparse(size(bins,1),size(bins,1));
 end
 
 %bins: column 1 is chromosome, column 2 is start position, column 3 is end
@@ -21,11 +21,11 @@ end
 %initialize bins_event_tble
 %changed from 5 to 3 columns because 4th and 5th columns were not being
 %used
-bins_event_tble = zeros(length(events),3);
+bins_event_tble = zeros(size(events,1),3);
 
 %loop through all events (table of pairs of breakpoints)
 %for each row
-for c1 = 1:length(events)   
+for c1 = 1:size(events,1)   
     %find the indices of the bins in which the ith and jth breaks fall in        
     bins_event_tble(c1,1) = find(bins(:,1)==events(c1,1) & bins(:,2)<=events(c1,2) & bins(:,3)>=events(c1,2));
     bins_event_tble(c1,2) = find(bins(:,1)==events(c1,4) & bins(:,2)<=events(c1,5) & bins(:,3)>=events(c1,5));
@@ -37,7 +37,7 @@ for c1 = 1:length(events)
     
     %sub2ind turn two dimensional indices to a unique one-dimensional tile
     %index
-    bins_event_tble(c1,3) = sub2ind([length(bins) length(bins)],bini,binj); % note: assign values only to upper tria of the matrix
+    bins_event_tble(c1,3) = sub2ind([size(bins,1) size(bins,1)],bini,binj); % note: assign values only to upper tria of the matrix
     %annot is the type of rearrangement as determined by the strand
     %orientation 
     annot=(events(c1,3)-1)*2+events(c1,6);
