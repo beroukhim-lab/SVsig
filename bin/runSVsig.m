@@ -26,14 +26,16 @@ global num_breakpoints_per_bin
 if nargin < 10 || isempty(model_file)
     model_file = '';
 end
-if nargin < 11 || isempty(tier_std_cutoff)
-    tier_std_cutoff = 38491;
-end
 if nargin < 12 || isempty(run_context)
     run_context = struct();
 end
 if nargin < 13
     bin_shift = [];
+end
+
+log_prefix = '';
+if isfield(run_context, 'log_prefix')
+    log_prefix = run_context.log_prefix;
 end
 
 % Initialize globals in each invocation so this function can run safely
@@ -55,6 +57,10 @@ if isfield(run_context, 'low_density_threshold')
 end
 if isfield(run_context, 'random_seed') && ~isempty(run_context.random_seed)
     rng(double(run_context.random_seed), 'twister');
+else
+    % rng('default') is ignored inside parfor (workers keep Threefry), so name the
+    % generator explicitly; mix_model_param draws random fmincon starts.
+    rng(0, 'twister');
 end
 FDR_THRESHOLD = fdr_threshold;
 BIN_SHIFT = bin_shift;
@@ -97,13 +103,12 @@ end
 if complex_model
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom_avgdist(mfull00, mix_model, [], [], bins, events00);
 else
-    sij1dx = length_dist_1d_bins(events00,chromosome_sizes,100);
     [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist(mfull00, mix_model, bins, events00, 0);
 end
 
 if isempty(pval_tophits_mix) || size(pval_tophits_mix,1) == 0
     % if no significant hits, return empty table with correct columns and skip annotation steps
-    fprintf('[runSVsig] No significant hits found. Writing empty output table.\n');
+    fprintf('%s[runSVsig] No significant hits found. Writing empty output table.\n', log_prefix);
     hits_table = createEmptyHitsTable();
     return;
 end
@@ -117,7 +122,7 @@ end
 
 [hitstable_mix,hitstable_mix_lookup] = HitsTableCV(mfull_pval_mix,pa_mix, pval_tophits_mix, bins_event_tble, qFDR_mix, events00, refgene_lookup);
 
-disp ('done with HitsTableCV')
+fprintf('%sdone with HitsTableCV\n', log_prefix);
 
 TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene,refgene_lookup, [] ,cancer_gene_symbols,curated_fusion_pairs,[]);
 
@@ -129,7 +134,6 @@ TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene
 %filter
 
 h1=1;
-TbyGene_mix_lf = table();
 hit_2_include=[];
 for c1=1:size(TbyGene_mix,2)
     if (TbyGene_mix(c1).avg_dist == -1 || TbyGene_mix(c1).avg_dist > len_filter)
@@ -166,7 +170,7 @@ hits_table.prob = annotated_table.p_mix;
 
 
 
-disp(strcat('the number of hits pre-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
+fprintf('%sthe number of hits pre-filtration is ...%d\n', log_prefix, length(unique(hits_table.cluster_num)));
 clusters = unique(hits_table.cluster_num);
 num_clusters = numel(clusters);
 clusters_to_keep = [];
@@ -240,7 +244,7 @@ hits_table = hits_table(keep, :);
 % Keep cluster_num for downstream multi-run supercluster merging.
 % It is removed from final user-facing output by run2DModel.matchOutputSchema.
 
-disp(strcat('the number of hits post-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
+fprintf('%sthe number of hits post-filtration is ...%d\n', log_prefix, length(unique(hits_table.cluster_num)));
 
 end   
 

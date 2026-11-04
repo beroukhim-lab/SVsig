@@ -89,6 +89,16 @@ for c1 = CHR
     % Importantly, shift=0 reduces algebraically to the original no-shift
     % bins. For shifted runs, we clip the translated bins to chromosome
     % bounds and skip bins that lie completely outside the chromosome.
+    % Shifted lattices leave [1, shift] uncovered, so emit a leading partial bin.
+    if shift > 0
+        bins(bc,1) = c1;
+        bins(bc,2) = 1;
+        bins(bc,3) = min(chr_size, shift);
+        breaks_per_bin = find(sorted_pos(:,1) <= (bins(bc,3) + 1) & sorted_pos(:,1) >= 1);
+        bins(bc,4) = length(breaks_per_bin);
+        bc = bc + 1;
+    end
+
     for c2 = 1:num_chr
         raw_start = 1 + shift + (c2 - 1) * avg_length_chr;
         raw_end   = shift + c2 * avg_length_chr;

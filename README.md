@@ -6,11 +6,12 @@
 
 ## _SVsig_ Install and Dependencies 
 
-_SVsig_ uses MATLAB, which can be obtained [here](https://www.mathworks.com/products/matlab.html). This version has primarily been tested using `MATLAB_R2020a` on macOS Sonoma (14.5) and `MATLAB_R2023b` on x86_64. 
+_SVsig_ uses MATLAB, which can be obtained [here](https://www.mathworks.com/products/matlab.html). This version has primarily been tested using `MATLAB_R2020a` on macOS Sonoma (14.5), `MATLAB_R2023b` on x86_64, and `MATLAB_R2024b` on macOS.
 
 Additionally, install the following MATLAB toolboxes:
 - Statistics and Machine Learning Toolbox
 - Optimization Toolbox
+- Parallel Computing Toolbox (optional; used to run bin-shifted runs in parallel, otherwise they run serially)
 
 Clone this repo into the directory you wish to run _SVsig_ in. 
 
@@ -76,6 +77,12 @@ cfg.model_exist = true;
 cfg.model_file = 'path/to/background_model.mat';
 ```
 
+The output delimiter is chosen from the `output_file` extension: `.csv` writes a comma-delimited file, and `.tsv` (or any other extension) writes a tab-delimited file. For example:
+
+```matlab
+cfg.output_file = 'path/to/output.csv';  % comma-delimited
+```
+
 <br>
 
 ### Run With CLI Flags
@@ -83,7 +90,7 @@ cfg.model_file = 'path/to/background_model.mat';
 `run2DModel` also supports flags (useful for compiled/batch runs). For example:
 
 ```bash
-run2DModel -sv path/to/input.csv -out path/to/output.tsv -bin 1e6 -fdr 0.01 - bix true
+run2DModel -sv path/to/input.csv -out path/to/output.tsv -bin 1e6 -fdr 0.01 -bix true
 ```
 
 Common flags:
@@ -97,9 +104,9 @@ Common flags:
 - `-bin`, `--bin_length` bin length
 - `-fdr`, `--fdr_threshold` BH-FDR cutoff
 - `-nshift`, `--n_binshifts` number of additional shifted runs
-- `-maxw`, `--max_workers` parallel worker cap
+- `-maxw`, `--max_workers` parallel worker cap (`1` forces serial execution)
 - `-scdist`, `--supercluster_distance_threshold` supercluster merge distance (bp)
-- `-genome`, `--genome_build` genome build (`hg_19` or `hg38` based tracks)
+- `-genome`, `--genome_build` genome build (`hg_19` or `hg_38`; selects `data/tracks/<genome_build>/`)
 - `-h`, `--help` print full option help
 
 <br>
@@ -120,17 +127,18 @@ Filtering and significance:
 - `low_density_threshold` (`-ldt`): low-density bin removal threshold
 
 Binning and superclustering:
-- `bin_length` (`-bin`): bin size
-- `num_breakpoints_per_bin` (`-nbpb`): breakpoint target per bin
-- `n_binshifts` (`-nshift`): additional shifted runs
+- `bin_length` (`-bin`): bin size in bp (default `5e5`)
+- `num_breakpoints_per_bin` (`-nbpb`): retained for compatibility but currently unused; bins are fixed-width and set by `bin_length`
+- `n_binshifts` (`-nshift`): additional shifted runs (default `0`)
 - `supercluster_distance_threshold` (`-scdist`): max breakpoint distance for merging clusters
 
 Runtime and tracks:
 - `max_workers` (`-maxw`): max parallel workers
 - `chr_list` (`-chr`): chromosomes to include
 - `genome_build` (`-genome`): genome build for track resolution
-- `random_seed` (`-seed`): reproducibility seed
-- `save_bin_index` (`-bix`): write bin-index sidecar files
+- `random_seed` (`-seed`): RNG seed. If unset, every run starts from MATLAB's default seed (`rng('default')`). If set, run `k` (0-based) uses `seed + k`
+- `save_bin_index` (`-bix`): write bin-index sidecar files. Names insert a tag before the output extension, e.g. `out.tsv` gives `out.bin_indices.tsv` (single run) or `out.bin_indices.shift<N>_bp<S>.tsv` (per shift run)
+- `save_per_run_output` (`-per_run`): when `n_binshifts > 0`, also write one output file per shift run (e.g. `out.tsv` gives `out.shift<N>_bp<S>.tsv`)
 - `ref_genes_file`, `cancer_genes_file`, `curated_fusions_file`, `chrom_sizes_file`, `blacklist_file`, `l1_elements_file`: optional track file overrides
 
 <br>
@@ -139,13 +147,14 @@ Runtime and tracks:
 
 When `n_binshifts > 0`, _SVsig_ runs the model multiple times with different bin boundary offsets to assess cluster robustness:
 - **Run 0** (baseline): Standard binning with no offset.
-- **Runs 1 to n_binshifts**: Each run applies a fractional offset k/(n_binshifts+1) of the bin_length, creating alternative binning schemes.
+- **Runs 1 to n_binshifts**: Each run translates the bin lattice by `floor(k/(n_binshifts+1) * bin_length)` bp. Because the translated lattice would otherwise leave positions `1..shift` uncovered, each chromosome also gets a leading partial bin spanning `1` to `shift`.
+- **Execution**: Runs execute in parallel with `parfor` when the Parallel Computing Toolbox is available and more than one worker is allowed (workers = min(runs, CPU cores, `max_workers`)); otherwise, or if the parallel run fails, they run serially.
 - **Merging**: After filtering per-run results, clusters from all runs are merged into superclusters based on proximity thresholds on both breakpoint coordinates.
-- **Output**: Single merged table with supercluster IDs, per-SV cluster tracking (sv_cluster_ids, sv_cluster_tiers), and multi-run statistics.
+- **Output**: Single merged table with one row per unique SV, supercluster IDs, per-SV cluster tracking (`sv_cluster_ids`, `sv_cluster_tiers`), and multi-run statistics. Per-run artifacts (`save_per_run_output`, `save_bin_index`) are written as each run completes.
 
 ### Outputs
 
-_SVsig-2D_ and _SVsig-2Dc_ output a TSV where each row is a rearrangement assigned to a significantly recurrent cluster. Output columns are:
+_SVsig-2D_ and _SVsig-2Dc_ output a table (comma-delimited if `output_file` ends in `.csv`, otherwise tab-delimited) where each row is a rearrangement assigned to a significantly recurrent cluster. Output columns are:
 
 **Cluster and Supercluster Identification:**
 - **supercluster_id**: Integer ID for the merged cluster (same run or across bin-shifted runs). In single-run mode, this is a remapped cluster ID; in multi-run mode, it represents the connected component ID after merging.
@@ -153,7 +162,7 @@ _SVsig-2D_ and _SVsig-2Dc_ output a TSV where each row is a rearrangement assign
 - **sv_cluster_tiers**: Tier values for each cluster listed in `sv_cluster_ids`, in matching order (e.g., `tier 1, tier 2`). Useful for tracking cluster precision before merging.
 - **supercluster_cluster_ids**: All clusters in this supercluster in tuple format, e.g., `(0, 3), (0, 5), (1, 2)`. Shows all (run_idx, cluster_num) pairs in the supercluster.
 - **supercluster_tier**: Tier label for the supercluster based on position spread thresholds: `tier 1` (both stddev ≤ cutoff), `tier 2` (one stddev ≤ cutoff), `tier 3` (both stddev > cutoff).
-- **shifts_found_count**: Number of bin-shift runs where this SV was detected. Value is 1 for single-run (no bin-shifting), ≥1 for multi-run.
+- **shifts_found_count**: Number of bin-shift runs where this SV was detected. This is a supercluster-level count (the same for every SV in a supercluster), not a per-SV count. Value is 1 for single-run (no bin-shifting).
 
 **Sample and Gene Information:**
 - **sid**: Sample ID for the rearrangement.
@@ -176,8 +185,8 @@ _SVsig-2D_ and _SVsig-2Dc_ output a TSV where each row is a rearrangement assign
   - Strand parser accepts both symbol and numeric encodings: `+/-`, `1/-1`, and `+1/-1`.
 
 **Statistical Measures:**
-- **tile_qval, pval, prob**: Per-run tile q-value, p-value, and background probability (from the specific run/cluster where SV was detected).
-- **sv_tile_qval, sv_pval, sv_prob**: Comma-separated lists (multi-run only) matching `sv_cluster_ids` order; per-cluster statistics for each run where the SV appears.
+- **tile_qval, pval, prob**: In single-run mode, the tile q-value, p-value, and background probability of the cluster. In multi-run mode these are supercluster-level: minimum q-value, minimum p-value, and mean probability across the supercluster.
+- **sv_tile_qval, sv_pval, sv_prob**: Comma-separated lists matching `sv_cluster_ids` order; per-cluster statistics for each run where the SV appears (a single value in single-run mode).
 - **supercluster_pval**: Minimum p-value across all clusters in supercluster.
 - **supercluster_prob**: Mean probability across all SVs in supercluster.
 - **supercluster_nsamples**: Number of unique samples in supercluster.
@@ -247,18 +256,18 @@ Only canonical chromosomes 1-22, X (23), and Y (24) are kept; other entries are 
 
 ### Default Sources
 
-The repository contains default reference genome files for hg19 and hg38.
+The repository currently ships default reference files for hg19 only (`data/tracks/hg_19/`). For hg38, set `genome_build = 'hg_38'` and either place files in `data/tracks/hg_38/` using the default filenames in `bin/resolve_track_paths.m`, or pass them via the override options below.
 
 *TODO: Haruna needs to fill this out with sources and citations!* 
 
 | Input File | hg19 (GRCh37) | hg38 (GRCh38) |
 |---|---|---|
-| Chromosome sizes (`chrom_sizes_file`) | **File:** `data/tracks/hg_19/hg19.chrom.sizes`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
-| Reference genome (`ref_genes_file`) | **File:** `data/tracks/hg_19/hg19.ncbiRefSeq.colnames.txt`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
-| Cancer genes (`cancer_genes_file`) | **File:** `data/tracks/hg_19/Cosmic_CancerGeneCensus_v104_GRCh37.tsv`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
-| Curated fusions (`curated_fusions_file`) | **File:** `data/tracks/hg_19/CuratedFusionGene.colnames.txt`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
-| Blacklist regions (`blacklist_file`) | **File:** `data/tracks/hg_19/mask_track.bed`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
-| L1 elements (`l1_elements_file`) | **File:** `data/tracks/hg_19/l1_track.bed`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
+| Chromosome sizes (`chrom_sizes_file`) | **File:** `data/tracks/hg_19/hg19.chrom.sizes`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg_38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
+| Reference genome (`ref_genes_file`) | **File:** `data/tracks/hg_19/hg19.ncbiRefSeq.colnames.txt`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg_38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
+| Cancer genes (`cancer_genes_file`) | **File:** `data/tracks/hg_19/Cosmic_CancerGeneCensus_v104_GRCh37.tsv`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg_38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
+| Curated fusions (`curated_fusions_file`) | **File:** `data/tracks/hg_19/CuratedFusionGene.colnames.txt`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg_38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
+| Blacklist regions (`blacklist_file`) | **File:** `data/tracks/hg_19/mask_track.bed`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg_38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
+| L1 elements (`l1_elements_file`) | **File:** `data/tracks/hg_19/l1_track.bed`<br>**Source/Citation:** _[ADD LINK/CITATION]_ | **File:** `data/tracks/hg_38/[ADD_FILENAME]`<br>**Source/Citation:** _[ADD LINK/CITATION]_ |
 
 ### Overriding Track Files
 

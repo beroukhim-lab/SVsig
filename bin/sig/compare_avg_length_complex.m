@@ -12,7 +12,7 @@ for c1=1:length(tile(:,1))
     pos2=bins(tile2(c1),1:3);
     tile_events=list_events(events(:,1:11),bins(tile1(c1),1:3),bins(tile2(c1),1:3),0,0,[],[],[],[]);
     
-       rng('default')
+       rng(0, 'twister')
    
        tile_pos_x=[tile_pos_x;tile_events(:,2)];
        tile_pos_y=[tile_pos_y;tile_events(:,5)];

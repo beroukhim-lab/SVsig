@@ -18,7 +18,8 @@
 %   cfg = struct();
 %   cfg.work_dir = '/path/to/SVsig';
 %   cfg.sv_file = '/path/to/input.csv';
-%   cfg.output_file = '/path/to/output.txt';
+%   cfg.output_file = '/path/to/output.tsv';
+%   % Output delimiter follows the extension: .csv = comma, .tsv (or anything else) = tab
 %   cfg.model_exist = false;  % set true only when cfg.model_file is provided
 %   run2DModel(cfg);
 %
@@ -78,7 +79,7 @@ function hits_table = run2DModel(varargin)
     std_filter = getOpt(cfg, 'std_filter', 10);
     len_filter = getOpt(cfg, 'len_filter', 1e6);
     fdr_threshold = getOpt(cfg, 'fdr_threshold', 0.1);
-    tier_std_cutoff = getOpt(cfg, 'tier_std_cutoff', 42833.6);
+    tier_std_cutoff = getOpt(cfg, 'tier_std_cutoff', 42833.6);  % previous default: 38491
     low_density_threshold_value = getOpt(cfg, 'low_density_threshold', 5e-5);
     supercluster_distance_threshold = getOpt(cfg, 'supercluster_distance_threshold', 5e4);
 
@@ -177,6 +178,11 @@ function hits_table = run2DModel(varargin)
         mkdir(output_dir);
     end
 
+    [~, ~, output_ext] = fileparts(output_file);
+    if ~any(strcmpi(output_ext, {'.csv', '.tsv'}))
+        fprintf('[run2DModel] output extension ''%s'' is not .csv or .tsv; writing tab-delimited output.\n', output_ext);
+    end
+
     run_context = struct( ...
         'work_dir', work_dir, ...
         'chr_list', chr_list, ...
@@ -223,12 +229,16 @@ function hits_table = run2DModel(varargin)
                     if isfield(local_run_context, 'base_random_seed')
                         local_run_context.random_seed = local_run_context.base_random_seed + (run_idx - 1);
                     end
+                    worker_id = currentWorkerId();
+                    worker_prefix = workerLogPrefix(worker_id);
+                    local_run_context.log_prefix = worker_prefix;
+                    fprintf('%s[run2DModel] starting run_idx=%d (shift_bp=%d)\n', worker_prefix, run_idx, shift_bp);
                     [hits_by_shift{run_idx}, bins_by_shift{run_idx}] = runSVsig( ...
                         sv_file, model_exist, complex_model, weights, len_filter, ...
                         fdr_threshold, bin_length_value, num_breakpoints_per_bin, ...
                         std_filter, model_file, tier_std_cutoff, local_run_context, shift_arg);
-                    writeRunArtifacts(hits_by_shift{run_idx}, bins_by_shift{run_idx}, output_file, run_idx, shift_bp, total_runs, save_per_run_output, save_bin_index);
-                    send(progress_queue, [run_idx, shift_bp]);
+                    writeRunArtifacts(hits_by_shift{run_idx}, bins_by_shift{run_idx}, output_file, run_idx, shift_bp, total_runs, save_per_run_output, save_bin_index, worker_prefix);
+                    send(progress_queue, [run_idx, shift_bp, worker_id]);
                 end
                 ran_in_parallel = true;
             catch parallel_err
@@ -275,21 +285,20 @@ function hits_table = run2DModel(varargin)
     hits_table = matchOutputSchema(hits_table);
 
     % Write output table
-    writetable(hits_table, output_file);
+    writeDelimitedTable(hits_table, output_file);
 
     % Optionally save bin indices to sidecar files for the single-run case.
     % Multi-run artifacts are already written eagerly as each run completes.
     if save_bin_index && total_runs == 1
-        [out_dir, out_base, out_ext] = fileparts(output_file);
-        bin_index_file = fullfile(out_dir, [out_base, out_ext, '.bin_indices.txt']);
+        bin_index_file = sidecarPath(output_file, '.bin_indices');
         writeBinIndicesFile(bins, bin_index_file);
         fprintf('[run2DModel] bin indices written to: %s\n', bin_index_file);
     end
 
     function onShiftRunCompleted(payload)
         completed_runs = completed_runs + 1;
-        fprintf('[run2DModel] completed shift run %d/%d (run_idx=%d, shift_bp=%d)\n', ...
-            completed_runs, total_runs, payload(1), payload(2));
+        fprintf('%s[run2DModel] completed shift run %d/%d (run_idx=%d, shift_bp=%d)\n', ...
+            workerLogPrefix(payload(3)), completed_runs, total_runs, payload(1), payload(2));
     end
 
 end
@@ -429,7 +438,9 @@ function printHelp()
     fprintf('\nUsage: run2DModel [OPTIONS]\n\n');
     fprintf('Required:\n');
     fprintf('  -sv,  --sv_file                    [path]   Input SV CSV file.\n');
-    fprintf('  -out, --output_file                [path]   Output tab-separated file to write.\n\n');
+    fprintf('  -out, --output_file                [path]   Output file to write. Delimiter follows the extension:\n');
+    fprintf('                                              .csv = comma-delimited; .tsv (or any other) = tab-delimited.\n');
+    fprintf('                                              Per-run and bin index files reuse this extension.\n\n');
 
     fprintf('Model Parameters:\n');
     fprintf('  -model_exist, --model_exist        [bool]   If true, load a pre-computed model_file.\n');
@@ -492,11 +503,11 @@ function printHelp()
     fprintf('  -bix, --save_bin_index             [bool]   Write a sidecar bin index file per shift alongside the output.\n');
     fprintf('                                              Contains chr, start, and end for each unique bin in the\n');
     fprintf('                                              final filtered output table for that shift.\n');
-    fprintf('                                              Filename: <output>.bin_indices.shift<N>bp<ext>.\n');
+    fprintf('                                              Filename: <name>.bin_indices.shift<N>_bp<S>.<ext>.\n');
     fprintf('                                              default=false\n');
-    fprintf('  -per_run, --save_per_run_output    [bool]   Write a separate per-run output tab-separated file for each bin-shift run\n');
+    fprintf('  -per_run, --save_per_run_output    [bool]   Write a separate per-run output file for each bin-shift run\n');
     fprintf('                                              alongside the merged output. Only used when n_binshifts > 0.\n');
-    fprintf('                                              Filename: <output>.shift<N>_bp<S>.txt\n');
+    fprintf('                                              Filename: <name>.shift<N>_bp<S>.<ext>\n');
     fprintf('                                              default=false\n');
     fprintf('  -h, --help                                  Show this help and exit.\n\n');
 end
@@ -672,24 +683,27 @@ function ensureParpoolSize(target_workers)
     end
 end
 
-function writeRunArtifacts(run_hits, run_bins, output_file, run_idx, shift_bp, total_runs, save_per_run_output, save_bin_index)
-    [out_dir, out_base, out_ext] = fileparts(output_file);
+function writeRunArtifacts(run_hits, run_bins, output_file, run_idx, shift_bp, total_runs, save_per_run_output, save_bin_index, log_prefix)
+    if nargin < 9
+        log_prefix = '';
+    end
+    shift_tag = sprintf('.shift%d_bp%d', run_idx - 1, shift_bp);
 
     if save_per_run_output && total_runs > 1
-        per_run_file = fullfile(out_dir, sprintf('%s%s.shift%d_bp%d.txt', out_base, out_ext, run_idx - 1, shift_bp));
+        per_run_file = sidecarPath(output_file, shift_tag);
         per_run_table = matchOutputSchema(run_hits);
-        writetable(per_run_table, per_run_file);
-        fprintf('[run2DModel] per-run output written to: %s\n', per_run_file);
+        writeDelimitedTable(per_run_table, per_run_file);
+        fprintf('%s[run2DModel] per-run output written to: %s\n', log_prefix, per_run_file);
     end
 
     if save_bin_index
         if total_runs == 1
-            bin_index_file = fullfile(out_dir, [out_base, out_ext, '.bin_indices.txt']);
+            bin_index_file = sidecarPath(output_file, '.bin_indices');
         else
-            bin_index_file = fullfile(out_dir, [out_base, out_ext, sprintf('.bin_indices.shift%d_bp%d.txt', run_idx - 1, shift_bp)]);
+            bin_index_file = sidecarPath(output_file, ['.bin_indices', shift_tag]);
         end
         writeBinIndicesFile(run_bins, bin_index_file);
-        fprintf('[run2DModel] bin indices written to: %s\n', bin_index_file);
+        fprintf('%s[run2DModel] bin indices written to: %s\n', log_prefix, bin_index_file);
     end
 end
 
@@ -946,14 +960,55 @@ function output_table = matchOutputSchema(input_table)
     end
 end
 
+function worker_id = currentWorkerId()
+    task = getCurrentTask();
+    if isempty(task)
+        worker_id = 0;
+    else
+        worker_id = task.ID;
+    end
+end
+
+function prefix = workerLogPrefix(worker_id)
+    % Empty for serial runs so serial log lines are unchanged.
+    if worker_id > 0
+        prefix = sprintf('[worker %d] ', worker_id);
+    else
+        prefix = '';
+    end
+end
+
+function delim = delimiterForFile(file_path)
+    [~, ~, ext] = fileparts(file_path);
+    if strcmpi(ext, '.csv')
+        delim = ',';
+    else
+        delim = '\t';
+    end
+end
+
+function file_path = sidecarPath(output_file, suffix)
+    % Insert suffix before the extension: out.tsv -> out<suffix>.tsv
+    [out_dir, out_base, out_ext] = fileparts(output_file);
+    if isempty(out_ext)
+        out_ext = '.tsv';
+    end
+    file_path = fullfile(out_dir, [out_base, suffix, out_ext]);
+end
+
+function writeDelimitedTable(output_table, file_path)
+    % FileType is explicit because writetable rejects extensions such as '.tsv'.
+    writetable(output_table, file_path, 'FileType', 'text', 'Delimiter', delimiterForFile(file_path));
+end
+
 function writeBinIndicesFile(bins, bin_index_file)
     if istable(bins)
-        writetable(bins, bin_index_file, 'Delimiter', '\t');
+        writeDelimitedTable(bins, bin_index_file);
         return;
     end
 
     if isnumeric(bins) || islogical(bins)
-        writematrix(bins, bin_index_file, 'Delimiter', '\t');
+        writematrix(bins, bin_index_file, 'FileType', 'text', 'Delimiter', delimiterForFile(bin_index_file));
         return;
     end
 

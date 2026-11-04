@@ -56,9 +56,9 @@ alphas = zeros(3,4);
 for k1 = 1:3
     nume=sum(mfull(:));
     alpha=rand(num_param,1);
-    nume_1 = sum(mfull(annot_tiles(:,:,1)));
-    nume_2 = sum(mfull(annot_tiles(:,:,2)));
-    nume_3 = sum(mfull(annot_tiles(:,:,3)));
+%    nume_1 = sum(mfull(annot_tiles(:,:,1)));
+%    nume_2 = sum(mfull(annot_tiles(:,:,2)));
+%    nume_3 = sum(mfull(annot_tiles(:,:,3)));
     %nume_4 = sum(mfull(annot_tiles(:,:,4)));
     % optimize over model
     %fincom
@@ -118,38 +118,38 @@ mix_model=mix_model/sum(mix_model(:));
         z_idc =  mfull == 0;     
 
 % change loglikelihood to compress long and ic
-    mfull_short = mfull(annot_tiles(:, :, 1)); 
-    mfull_long = sum(mfull(annot_tiles(:, :, 2)));
-    mfull_ic = sum(mfull(annot_tiles(:, :, 3)));
+%    mfull_short = mfull(annot_tiles(:, :, 1)); 
+%    mfull_long = sum(mfull(annot_tiles(:, :, 2)));
+%    mfull_ic = sum(mfull(annot_tiles(:, :, 3)));
     
-    mm_short = mix_model(annot_tiles(:, :, 1));
-    mm_long = sum(mix_model(annot_tiles(:, :, 2)));
-    mm_ic = sum(mix_model(annot_tiles(:, :, 3)));
+%    mm_short = mix_model(annot_tiles(:, :, 1));
+%    mm_long = sum(mix_model(annot_tiles(:, :, 2)));
+%    mm_ic = sum(mix_model(annot_tiles(:, :, 3)));
     
     %compare mean number of rearrangements with expected value
-    m1_short = model1(annot_tiles(:, :, 1));
-    m1_long = model1(annot_tiles(:, :, 2));
-    m1_ic = model1(annot_tiles(:, :, 3));
+%    m1_short = model1(annot_tiles(:, :, 1));
+%    m1_long = model1(annot_tiles(:, :, 2));
+%    m1_ic = model1(annot_tiles(:, :, 3));
     
-    m2_short = model2(annot_tiles(:, :, 1));
-    m2_long = model2(annot_tiles(:, :, 2));
-    m2_ic = model2(annot_tiles(:, :, 3));
+%    m2_short = model2(annot_tiles(:, :, 1));
+%    m2_long = model2(annot_tiles(:, :, 2));
+%    m2_ic = model2(annot_tiles(:, :, 3));
     
    % sum(abs(nume*m1_short - mfull_short))
     %sum(abs(nume*m2_short - mfull_short))
     
-     sum(nume*m1_long)- mfull_long
-    sum(nume*m2_long) - mfull_long
+%     sum(nume*m1_long)- mfull_long
+%    sum(nume*m2_long) - mfull_long
     
-    sum(nume*m1_ic) - mfull_ic
-    sum(nume*m2_ic) - mfull_ic
+%    sum(nume*m1_ic) - mfull_ic
+%    sum(nume*m2_ic) - mfull_ic
      
     
-    nnzs_idc = mm_short > 0;
+%    nnzs_idc = mm_short > 0;
     
-    shortLij = sum(mfull_short(nnzs_idc).*log(nume*mm_short(nnzs_idc))-nume*mm_short(nnzs_idc)-log_fac(mfull_short(nnzs_idc)+1)');
-    longLij = mfull_long.*log(nume*mm_long)-nume*mm_long-sum(log(1:mfull_long));
-   icLij = mfull_ic.*log(nume*mm_ic)-nume*mm_ic-sum(log(1:mfull_ic));
+%    shortLij = sum(mfull_short(nnzs_idc).*log(nume*mm_short(nnzs_idc))-nume*mm_short(nnzs_idc)-log_fac(mfull_short(nnzs_idc)+1)');
+%    longLij = mfull_long.*log(nume*mm_long)-nume*mm_long-sum(log(1:mfull_long));
+%   icLij = mfull_ic.*log(nume*mm_ic)-nume*mm_ic-sum(log(1:mfull_ic));
    
    %longLij = binopdf(mfull_long, nume, mm_long);
    %icLij = binopdf(mfull_ic, nume, mm_ic);
@@ -170,12 +170,12 @@ mix_model=mix_model/sum(mix_model(:));
         %this is part of the -n*theta part of log likelihood function 
   
 %parameter penality 
- penalty1 = log(nume_1)*(1 - alpha(1))* 8;
- penalty2 = log(nume_2)*(1 - alpha(2)) * 2;
+% penalty1 = log(nume_1)*(1 - alpha(1))* 8;
+% penalty2 = log(nume_2)*(1 - alpha(2)) * 2;
  %penalty3 = (1- alpha(3)) * 0;
  %3 added terms to BIC as penalty
         % the BIC value
-    BIC = -2*(sLij + zLij)+log(nume)*num_param
+    BIC = -2*(sLij + zLij)+log(nume)*num_param;
     %BIC = -2*(sLij + zLij + xLij)+log(nume)*num_param
 
       %BIC = -2*(sLij + zLij)+penalty1 + penalty2 
