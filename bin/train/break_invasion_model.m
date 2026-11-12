@@ -8,20 +8,26 @@ global CHR
 global bins_event_tble
 global genome_build
 global bin_length
+global BIN_SHIFT
 
-
+global TRACK_PATHS
+global LOW_DENSITY_THRESHOLD
+global refgene_lookup
+global cancer_gene_symbols
+global curated_fusion_pairs
+global chromosome_sizes
 
 EventsFile=sv_file;
 
-load(strcat(WorkDir,'/data/tracks/MiscVar')); % run gen_misc_var to update variables
-fragile_track=importdata([WorkDir '/data/tracks/fragile_genes_smith.hg19fp.bed.txt']);
-%fragile_track=importdata([WorkDir 'data//tracks/HumCFS_hg38_lift_hg19.txt']);
-
-
-if genome_build == 'hg_38'
-    fragile_track=importdata([WorkDir '/data/tracks/fragile_genes.hg38.txt']);
-    chsize=importdata([WorkDir '/data/tracks/chsize_hg38.txt']);
-end
+% Load track files using resolved paths from run2DModel
+tracks = load_track_files(TRACK_PATHS, genome_build);
+refgene = tracks.refgene;
+refgene_lookup = tracks.refgene_lookup;
+chromosome_sizes = tracks.chromosome_sizes;
+cancer_gene_symbols = tracks.cancer_gene_symbols;
+curated_fusion_pairs = tracks.curated_fusion_pairs;
+blacklist_regions = tracks.blacklist_regions;
+l1_elements = tracks.l1_elements;
 
 % CHR = 1:23; % chromosomes to include in analysis
 %now global variable
@@ -30,29 +36,33 @@ EventLengthThreshold=200; % filter short event [bp], deafult 200
 num_annot=4;
 min_bin_dist = 500; % def = 500; minimum distance of bins-separating events
 
-Tumor_column=7; 
-Event_column=8;
-Sample_column=9;
-Patient_column=10;
-Weights_column = 11;
+sample_id_column = 9;
+
+input_columns = struct( ...
+	'seqnames', 'seqnames', ...
+	'start', 'start', ...
+	'strand', 'strand', ...
+	'altchr', 'altchr', ...
+	'altpos', 'altpos', ...
+	'altstrand', 'altstrand', ...
+	'sid', 'sid', ...
+	'weights', 'weights');
 
 % Generate numeric array of events from merge set
 %returns an events matrix with a list of junctions
 %also returns unique vectors for the sample ids, sv_ids, tumor subtypes, strands,topologies and mechanism 
-[events0, Uevent, Usample, Upatient, UTumor, Ustrand1, Ustrand2] = GenerateSVarray(EventsFile,EventLengthThreshold,CHR,Tumor_column,Event_column,Sample_column,Patient_column, Weights_column);
+events0 = GenerateSVarray(EventsFile, EventLengthThreshold, CHR, input_columns);
 
-% remove events in mask_track
-[events0,masked_events] = mask_events(events0, mask_track);
-%returns masked_events which is a logical vector indicating whether or not
-%an event is masked?
+% remove events in blacklist regions
+events0 = mask_events(events0, blacklist_regions);
 
-[events0,masked_l1_events] = mask_events(events0, l1_track);
+events0 = mask_events(events0, l1_elements);
 
 
 % set bins boundries 
 % returns a table of bins with chr number, start and end position, and number of breakpoints per bin
-%[bins0, numbins] = SetBins(events0,num_breakpoints_per_bin,chsize,CHR,min_bin_dist); 
-[bins0, numbins] = SetBins_bylength(events0, bin_length, chsize,CHR); 
+%[bins0, numbins] = SetBins(events0,num_breakpoints_per_bin,chromosome_sizes,CHR,min_bin_dist);
+[bins0, numbins] = SetBins_bylength(events0, bin_length, chromosome_sizes, CHR, BIN_SHIFT);
 
 % 2026/02/17: exported bins0 as the bin boundary definitions, before we
 % drop the empty bins
@@ -83,21 +93,23 @@ bins=bins0;
 events00=events0;
 mfull=mfull0;
 
-[bins_event_tble, bins, mfull, events00, removed_events] = RemoveSameSampleEvents(bins_event_tble0, bins0, mfull0, events0,Patient_column,1);
+[bins_event_tble, bins, mfull, events00] = RemoveSameSampleEvents(bins_event_tble0, bins0, mfull0, events0, sample_id_column, 1);
 
 %remove events in the same nucleotide (artifacts)
-[bins_event_tble, bins, mfull, events00, removed_events_std] = RemoveZeroVarSampleEvents(bins_event_tble, bins, mfull, events00);
+[bins_event_tble, bins, mfull, events00] = RemoveZeroVarSampleEvents(bins_event_tble, bins, mfull, events00);
 
-%Antonia: Update CHR to only include bins with at least one event
+% Keep the user-requested chromosome scope and report which of those were dropped.
+requested_CHR = CHR;
+% Antonia: Update CHR to only include bins with at least one event
 CHR = unique(bins(:,1))';
-excluded = setdiff(1:23, CHR);
+excluded = setdiff(requested_CHR, CHR);
 disp(['Excluded chromosomes: ' num2str(excluded)])
 
 R = MarginalProbability(bins_event_tble,events00,numbins); 
 
 
 % 
-sij1dx = length_dist_1d_bins(events00,chsize,10);
+sij1dx = length_dist_1d_bins(events00,chromosome_sizes,10);
 sij1dx=unique(sij1dx);
 sij1dy = EventLengthDist_G(sij1dx,events00,0);
 sij1dy = sum(sij1dy,2);
@@ -105,34 +117,20 @@ sij1dy = sij1dy./sum(sij1dy(1:end-1).*diff(sij1dx'));
 
 %sij1dx=repmat(0,100,1);
 
-%no_annot indicates if CP_fragile or CP is to be used 
-%default is CP
-no_annot = 0; 
+% remove CP fragile as an option
+[sij,sij1dy] = ConditionalProbability(events00,chromosome_sizes,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx);  % 3D matrix with conditional probability per annotation
 
-if no_annot    
-    annot_array=event_annot(events00,TAD_track,fragile_track,gene_track,cancer_genes_track);
-    fragile_annot=12;
-    sij = ConditionalProbability_fragile(events00,annot_array(:,fragile_annot),bins_event_tble,chsize,bins,CHR,sij1dx);
+
+mfull00=mfull{1}+mfull{2}+mfull{3}+mfull{4};
     
-    [p, qe, qsolve] = q_solver_copy(R, sij, 1);
-    
-else
-    [sij,sij1dy] = ConditionalProbability_copy(events00,chsize,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx);  % 3D matrix with conditional probability per annotation
+%normalize by event ratios
+[sij1]=renormalize_tiles(mfull00, sum(sij,3), events00, bins, CHR);
 
-    
-    mfull00=mfull{1}+mfull{2}+mfull{3}+mfull{4};
-    annot_tiles1=tiles_annot_copy('length',events00,bins,CHR);
-     
-    %normalize by event ratios
-    [sij1]=renormalize_tiles(mfull00, sum(sij,3), events00, bins, CHR);
+p = q_solver(R, sij1, 1);
 
-    [p, qe, qsolve] = q_solver(R, sij1, 1);
-    
-    %normalize again by event ratios 
-    [p]=renormalize_tiles(mfull00, p,  events00, bins, CHR);
+%normalize again by event ratios 
+[p]=renormalize_tiles(mfull00, p,  events00, bins, CHR);
 
-    %make sure sum to 2
-    p = 2*p ./ sum(sum(p));
-
-end
+%make sure sum to 2
+p = 2*p ./ sum(sum(p));
 

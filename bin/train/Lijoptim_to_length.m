@@ -63,7 +63,7 @@ opt1dy=[];
 fval=[];
 
 % calculate sij 
-num_bins = length(bins);
+num_bins = size(bins,1);
 sij = zeros(num_bins,num_bins);
 bpsize=sum(chsize(CHR));
 

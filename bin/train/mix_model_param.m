@@ -13,7 +13,7 @@ global weights
 
 %logical: bins x bins x num_param
 %e.g. for short events param, denotes are the events in this tile short?
-annot_tiles=tiles_annot_copy('length',events,bins,CHR);
+annot_tiles=tiles_annot('length',events,bins,CHR);
 %annot_tiles=tiles_annot('length',events,bins,CHR);
 
 
@@ -36,20 +36,12 @@ if issymmetric(mfull)
     mfull(eye(size(mfull))==1)=diag(mfull)/2;
 end
 
-%export mfull, model1, model2, annot_tiles to optimize alphas and calculate
-%background matrix in R
-%Need to do this because we are calculating the log likelihood with the
-%continous binomial and the density function for cbinom is in R 
- if complex && weights   
-     save('debug_alpha')
-     % for 1MB somatic distance cutoff in Xiatong's promiximity matrix
-     %load('/Volumes/xchip_beroukhimlab/Kiran/git/2dmodel/SVsig/cbinom_alpha.mat');
-     load('/Users/shu/SVsig_labcopy/cbinom_alpha.mat');
-
-     %for 50 kb somatic distance cutoff in X's prox matrix 
-     %load('2020021050kbcbinom_alpha.mat')   
-     disp('loading continous binomial alpha parameters')
- else 
+% Complex weighted events previously required pausing to run an R script.
+% This path now optimizes alpha directly in MATLAB (no manual handoff).
+ if complex && weights
+     disp('optimizing complex weighted alpha parameters in MATLAB')
+     [opt_alpha, f_bic] = mix_model_alpha(mfull, model1, model2, annot_tiles, num_param);
+ else
 %calculating log factorial--faster than calculating factorial then taking
 %the log2
 disp('calculating poisson log likelihood approximation')
@@ -62,28 +54,33 @@ BIC = zeros(3,1);
 alphas = zeros(3,4);
 
 for k1 = 1:3
-nume=sum(mfull(:));
-alpha=rand(num_param,1);
-nume_1 = sum(mfull(annot_tiles(:,:,1)));
-nume_2 = sum(mfull(annot_tiles(:,:,2)));
-nume_3 = sum(mfull(annot_tiles(:,:,3)));
-%nume_4 = sum(mfull(annot_tiles(:,:,4)));
-% optimize over model
-%fincom
+    nume=sum(mfull(:));
+    alpha=rand(num_param,1);
+%    nume_1 = sum(mfull(annot_tiles(:,:,1)));
+%    nume_2 = sum(mfull(annot_tiles(:,:,2)));
+%    nume_3 = sum(mfull(annot_tiles(:,:,3)));
+    %nume_4 = sum(mfull(annot_tiles(:,:,4)));
+    % optimize over model
+    %fincom
 
-%repeat ten times to check for stability
-%each row is a new iteration
+    %repeat ten times to check for stability
+    %each row is a new iteration
 
-options = optimoptions('fmincon','DiffMinChange',1e-6,'TolFun',1e-1,'TolX',1e-6);
+    options = optimoptions('fmincon','DiffMinChange',1e-6,'TolFun',1e-1,'TolX',1e-6);
 
-[opt_alpha, f_bic] = fmincon(@mix_optim_fun,alpha,[],[],[],[],zeros(num_param,1),ones(num_param,1),[],options);
+    [opt_alpha, f_bic] = fmincon(@mix_optim_fun,alpha,[],[],[],[],zeros(num_param,1),ones(num_param,1),[],options);
 
-alphas(k1, :) = opt_alpha;
-BIC(k1, :) = f_bic;
+    alphas(k1, :) = opt_alpha;
+    BIC(k1, :) = f_bic;
 
-end 
+    end 
+
+    % Find the iteration that produced the true minimum BIC score
+    [~, best_idx] = min(BIC);
+    opt_alpha = alphas(best_idx, :);
+    f_bic = BIC(best_idx);
  
- end 
+end 
  
  
  
@@ -121,38 +118,38 @@ mix_model=mix_model/sum(mix_model(:));
         z_idc =  mfull == 0;     
 
 % change loglikelihood to compress long and ic
-    mfull_short = mfull(annot_tiles(:, :, 1)); 
-    mfull_long = sum(mfull(annot_tiles(:, :, 2)));
-    mfull_ic = sum(mfull(annot_tiles(:, :, 3)));
+%    mfull_short = mfull(annot_tiles(:, :, 1)); 
+%    mfull_long = sum(mfull(annot_tiles(:, :, 2)));
+%    mfull_ic = sum(mfull(annot_tiles(:, :, 3)));
     
-    mm_short = mix_model(annot_tiles(:, :, 1));
-    mm_long = sum(mix_model(annot_tiles(:, :, 2)));
-    mm_ic = sum(mix_model(annot_tiles(:, :, 3)));
+%    mm_short = mix_model(annot_tiles(:, :, 1));
+%    mm_long = sum(mix_model(annot_tiles(:, :, 2)));
+%    mm_ic = sum(mix_model(annot_tiles(:, :, 3)));
     
     %compare mean number of rearrangements with expected value
-    m1_short = model1(annot_tiles(:, :, 1));
-    m1_long = model1(annot_tiles(:, :, 2));
-    m1_ic = model1(annot_tiles(:, :, 3));
+%    m1_short = model1(annot_tiles(:, :, 1));
+%    m1_long = model1(annot_tiles(:, :, 2));
+%    m1_ic = model1(annot_tiles(:, :, 3));
     
-    m2_short = model2(annot_tiles(:, :, 1));
-    m2_long = model2(annot_tiles(:, :, 2));
-    m2_ic = model2(annot_tiles(:, :, 3));
+%    m2_short = model2(annot_tiles(:, :, 1));
+%    m2_long = model2(annot_tiles(:, :, 2));
+%    m2_ic = model2(annot_tiles(:, :, 3));
     
    % sum(abs(nume*m1_short - mfull_short))
     %sum(abs(nume*m2_short - mfull_short))
     
-     sum(nume*m1_long)- mfull_long
-    sum(nume*m2_long) - mfull_long
+%     sum(nume*m1_long)- mfull_long
+%    sum(nume*m2_long) - mfull_long
     
-    sum(nume*m1_ic) - mfull_ic
-    sum(nume*m2_ic) - mfull_ic
+%    sum(nume*m1_ic) - mfull_ic
+%    sum(nume*m2_ic) - mfull_ic
      
     
-    nnzs_idc = mm_short > 0;
+%    nnzs_idc = mm_short > 0;
     
-    shortLij = sum(mfull_short(nnzs_idc).*log(nume*mm_short(nnzs_idc))-nume*mm_short(nnzs_idc)-log_fac(mfull_short(nnzs_idc)+1)');
-    longLij = mfull_long.*log(nume*mm_long)-nume*mm_long-sum(log(1:mfull_long));
-   icLij = mfull_ic.*log(nume*mm_ic)-nume*mm_ic-sum(log(1:mfull_ic));
+%    shortLij = sum(mfull_short(nnzs_idc).*log(nume*mm_short(nnzs_idc))-nume*mm_short(nnzs_idc)-log_fac(mfull_short(nnzs_idc)+1)');
+%    longLij = mfull_long.*log(nume*mm_long)-nume*mm_long-sum(log(1:mfull_long));
+%   icLij = mfull_ic.*log(nume*mm_ic)-nume*mm_ic-sum(log(1:mfull_ic));
    
    %longLij = binopdf(mfull_long, nume, mm_long);
    %icLij = binopdf(mfull_ic, nume, mm_ic);
@@ -173,12 +170,12 @@ mix_model=mix_model/sum(mix_model(:));
         %this is part of the -n*theta part of log likelihood function 
   
 %parameter penality 
- penalty1 = log(nume_1)*(1 - alpha(1))* 8;
- penalty2 = log(nume_2)*(1 - alpha(2)) * 2;
+% penalty1 = log(nume_1)*(1 - alpha(1))* 8;
+% penalty2 = log(nume_2)*(1 - alpha(2)) * 2;
  %penalty3 = (1- alpha(3)) * 0;
  %3 added terms to BIC as penalty
         % the BIC value
-    BIC = -2*(sLij + zLij)+log(nume)*num_param
+    BIC = -2*(sLij + zLij)+log(nume)*num_param;
     %BIC = -2*(sLij + zLij + xLij)+log(nume)*num_param
 
       %BIC = -2*(sLij + zLij)+penalty1 + penalty2 

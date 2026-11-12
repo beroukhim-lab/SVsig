@@ -1,21 +1,81 @@
 
-function [hits_table, bins] = runSVsig(sv_file, model_exist, complex, weights, len_filter, bks_cluster, ...
-FDR_THRESHOLD, bin_length, num_breakpoints_per_bin, std_filter, model_file, tier_std_cutoff)
+function [hits_table, bins] = runSVsig(sv_file, model_exist, complex_model, weights_value, len_filter, ...
+fdr_threshold, bin_length_value, num_breakpoints_per_bin_value, std_filter, model_file, tier_std_cutoff, run_context, bin_shift)
+global cancer_gene_symbols
+global curated_fusion_pairs
+global chromosome_sizes
+global refgene
+global refgene_lookup
+global events00
+global bins
+global bins_event_tble
+global mfull00
+global mix_model
+global WorkDir
+global CHR
+global genome_build
+global TRACK_PATHS
+global LOW_DENSITY_THRESHOLD
+global BIN_SHIFT
+global FDR_THRESHOLD
+global complex
+global weights
+global bin_length
+global num_breakpoints_per_bin
 
-if nargin < 11 || isempty(model_file)
+if nargin < 10 || isempty(model_file)
     model_file = '';
 end
-if nargin < 12 || isempty(tier_std_cutoff)
-    tier_std_cutoff = 38491;
+if nargin < 12 || isempty(run_context)
+    run_context = struct();
 end
+if nargin < 13
+    bin_shift = [];
+end
+
+log_prefix = '';
+if isfield(run_context, 'log_prefix')
+    log_prefix = run_context.log_prefix;
+end
+
+% Initialize globals in each invocation so this function can run safely
+% in serial or on parallel workers.
+if isfield(run_context, 'work_dir')
+    WorkDir = run_context.work_dir;
+end
+if isfield(run_context, 'chr_list')
+    CHR = run_context.chr_list;
+end
+if isfield(run_context, 'genome_build')
+    genome_build = run_context.genome_build;
+end
+if isfield(run_context, 'track_paths')
+    TRACK_PATHS = run_context.track_paths;
+end
+if isfield(run_context, 'low_density_threshold')
+    LOW_DENSITY_THRESHOLD = run_context.low_density_threshold;
+end
+if isfield(run_context, 'random_seed') && ~isempty(run_context.random_seed)
+    rng(double(run_context.random_seed), 'twister');
+else
+    % rng('default') is ignored inside parfor (workers keep Threefry), so name the
+    % generator explicitly; mix_model_param draws random fmincon starts.
+    rng(0, 'twister');
+end
+FDR_THRESHOLD = fdr_threshold;
+BIN_SHIFT = bin_shift;
+complex = complex_model;
+weights = weights_value;
+bin_length = bin_length_value;
+num_breakpoints_per_bin = num_breakpoints_per_bin_value;
  
 
-%load rearrangement data table with the following columns:
-
-% {seqnames, start, strand1, altchr, altpos, strand2,
-% subtype(histology), sv_id, sid(sample ID),donor_unique_id}
+% Load rearrangement data table by required column names.
+% Required: seqnames, start, strand, altchr, altpos, altstrand,
+%           sid
 
 SVTable=readtable(sv_file, 'Delimiter', ',');
+SVTable = standardizeSVInputTable(SVTable);
 
 
 
@@ -40,25 +100,17 @@ else
 end
 
 
-bks_cluster=1;
-if ~bks_cluster
-   if weights 
-       %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom(mfull00, mix_model, [], []);
-       %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom_avgdist(mfull00, mix_model, [], [], bins, events00);
-    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull00, mix_model, [], [],1);
-
-   else 
-    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal(mfull00, mix_model, [], [],1);
-   end 
-
+if complex_model
+    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValCBinom_avgdist(mfull00, mix_model, [], [], bins, events00);
 else
-    sij1dx = length_dist_1d_bins(events00,chsize,100);
-    %PValMH adjusts for clustered fragile sites within bins whereas PVal does not
-    %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull+mfull', mix_model, bins, events, sij1dx, chsize, CHR, 1, 0.1, 0);
-    %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PValMH(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
-    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
-     %[qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist_copy(mfull00, mix_model, bins, events00, sij1dx, chsize, CHR, 1, 0);
+    [qFDR_mix, pa_mix, pval_tophits_mix, mfull_pval_mix] = PVal_AvgDist(mfull00, mix_model, bins, events00, 0);
+end
 
+if isempty(pval_tophits_mix) || size(pval_tophits_mix,1) == 0
+    % if no significant hits, return empty table with correct columns and skip annotation steps
+    fprintf('%s[runSVsig] No significant hits found. Writing empty output table.\n', log_prefix);
+    hits_table = createEmptyHitsTable();
+    return;
 end
 
 
@@ -68,12 +120,11 @@ end
 %hits and such 
 %wait jk TophistByGenes doe sthat check HitsTableCV later 
 
-[hitstable_mix,hitstable_mix_lookup] = HitsTableCV(mfull_pval_mix,pa_mix, pval_tophits_mix, bins_event_tble, qFDR_mix, events00, refgene_tble);
+[hitstable_mix,hitstable_mix_lookup] = HitsTableCV(mfull_pval_mix,pa_mix, pval_tophits_mix, bins_event_tble, qFDR_mix, events00, refgene_lookup);
 
-disp ('done with HitsTableCV')
+fprintf('%sdone with HitsTableCV\n', log_prefix);
 
-CuratedFusionGene0=CuratedFusionGene(1:end-3,:);
-TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene,refgene_tble, [] ,CosmicCencus,CuratedFusionGene0,[]);
+TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene,refgene_lookup, [] ,cancer_gene_symbols,curated_fusion_pairs,[]);
 
 
 
@@ -83,7 +134,6 @@ TbyGene_mix = TophitsByGenes(hitstable_mix,hitstable_mix_lookup,1e4,bins,refgene
 %filter
 
 h1=1;
-TbyGene_mix_lf = table();
 hit_2_include=[];
 for c1=1:size(TbyGene_mix,2)
     if (TbyGene_mix(c1).avg_dist == -1 || TbyGene_mix(c1).avg_dist > len_filter)
@@ -104,7 +154,6 @@ hits_table.all_genes_i = annotated_table.nearby_genes_i;
 hits_table.gene_j = annotated_table.gene_j;
 hits_table.all_genes_j = annotated_table.nearby_genes_j;
 
-hits_table.subtype = annotated_table.dcc_project_code;
 hits_table.bin_i = annotated_table.bin_i;
 hits_table.chr_i = annotated_table.seqnames;
 hits_table.pos_i = annotated_table.start;
@@ -113,6 +162,7 @@ hits_table.bin_j = annotated_table.bin_j;
 hits_table.chr_j = annotated_table.altchr;
 hits_table.pos_j = annotated_table.altpos;
 hits_table.strand_j = annotated_table.altstrand;
+hits_table.sv_class = classifySVClass(hits_table.chr_i, hits_table.chr_j, hits_table.strand_i, hits_table.strand_j);
 hits_table.tile_qval = annotated_table.tile_qval;
 hits_table.pval = annotated_table.pval;
 hits_table.prob = annotated_table.p_mix;
@@ -120,7 +170,7 @@ hits_table.prob = annotated_table.p_mix;
 
 
 
-disp(strcat('the number of hits pre-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
+fprintf('%sthe number of hits pre-filtration is ...%d\n', log_prefix, length(unique(hits_table.cluster_num)));
 clusters = unique(hits_table.cluster_num);
 num_clusters = numel(clusters);
 clusters_to_keep = [];
@@ -158,16 +208,198 @@ is_tier1 = hits_table.stddev_i <= tier_std_cutoff & hits_table.stddev_j <= tier_
 is_tier2 = xor(hits_table.stddev_i <= tier_std_cutoff, hits_table.stddev_j <= tier_std_cutoff);
 tier(is_tier1) = {'tier 1'};
 tier(is_tier2) = {'tier 2'};
-hits_table.tier = tier;
-    
+hits_table.supercluster_tier = tier;
+
+% Single-run only: supercluster_id is remapped cluster_num, sv_cluster_ids is tuple format.
+original_cluster_num = hits_table.cluster_num;
+[~, ~, remapped_cluster_idx] = unique(hits_table.cluster_num, 'stable');
+hits_table.supercluster_id = remapped_cluster_idx;
+hits_table.sv_cluster_ids = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.sv_cluster_tiers = tier;
+hits_table.sv_bin_i = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.sv_bin_j = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.sv_tile_qval = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.sv_pval = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.sv_prob = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.supercluster_cluster_ids = cellstr(string(zeros(height(hits_table), 1)));
+hits_table.supercluster_pval = hits_table.pval;
+hits_table.supercluster_prob = hits_table.prob;
+hits_table.supercluster_nsamples = hits_table.num_hits;
+hits_table.shifts_found_count = repmat(1, height(hits_table), 1);
+for i = 1:height(hits_table)
+    tuple_str = sprintf('(0, %d)', original_cluster_num(i));
+    hits_table.sv_cluster_ids{i} = tuple_str;
+    hits_table.sv_bin_i{i} = sprintf('%d', hits_table.bin_i(i));
+    hits_table.sv_bin_j{i} = sprintf('%d', hits_table.bin_j(i));
+    hits_table.sv_tile_qval{i} = sprintf('%.4g', hits_table.tile_qval(i));
+    hits_table.sv_pval{i} = sprintf('%.4g', hits_table.pval(i));
+    hits_table.sv_prob{i} = sprintf('%.4g', hits_table.prob(i));
+    hits_table.supercluster_cluster_ids{i} = tuple_str;
+end
 
 %keep only the clusters that pass filtration criteria
 keep = ismember(hits_table.cluster_num, clusters_to_keep);
 hits_table = hits_table(keep, :);
 
-disp(strcat('the number of hits post-filtration is ...', num2str(length(unique(hits_table.cluster_num)))))
+% Keep cluster_num for downstream multi-run supercluster merging.
+% It is removed from final user-facing output by run2DModel.matchOutputSchema.
+
+fprintf('%sthe number of hits post-filtration is ...%d\n', log_prefix, length(unique(hits_table.cluster_num)));
 
 end   
+
+function SVTable = standardizeSVInputTable(SVTable)
+required_cols = {'seqnames', 'start', 'strand', 'altchr', 'altpos', 'altstrand', 'sid'};
+for k = 1:numel(required_cols)
+    if ~any(strcmp(SVTable.Properties.VariableNames, required_cols{k}))
+        error('runSVsig:MissingInputColumn', 'Missing required input column: %s', required_cols{k});
+    end
+end
+
+SVTable.seqnames = normalizeChrVector(SVTable.seqnames, 'seqnames');
+SVTable.altchr = normalizeChrVector(SVTable.altchr, 'altchr');
+SVTable.start = toNumericVector(SVTable.start, 'start');
+SVTable.altpos = toNumericVector(SVTable.altpos, 'altpos');
+end
+
+function values = toNumericVector(raw_values, column_name)
+if isnumeric(raw_values)
+    values = double(raw_values);
+    return;
+end
+
+if iscategorical(raw_values)
+    raw_values = string(raw_values);
+elseif iscell(raw_values)
+    raw_values = string(raw_values);
+end
+
+values = str2double(string(raw_values));
+if any(isnan(values))
+    error('runSVsig:BadNumericInput', 'Column %s must contain numeric values.', column_name);
+end
+end
+
+function chr_num = normalizeChrVector(raw_values, column_name)
+n_rows = numel(raw_values);
+chr_num = zeros(n_rows, 1);
+for i = 1:n_rows
+    chr_num(i) = normalizeChrValue(raw_values(i));
+end
+
+if any(chr_num < 1 | chr_num > 24 | isnan(chr_num))
+    error('runSVsig:BadChromosomeInput', ...
+          'Column %s contains noncanonical chromosome values. Use 1-22, X, or Y (with or without chr prefix).', ...
+          column_name);
+end
+end
+
+function chr_val = normalizeChrValue(raw_value)
+if iscell(raw_value)
+    raw_value = raw_value{1};
+end
+
+if isnumeric(raw_value)
+    chr_val = double(raw_value);
+    return;
+end
+
+if iscategorical(raw_value)
+    raw_value = string(raw_value);
+end
+
+chr_text = lower(strtrim(string(raw_value)));
+chr_text = erase(chr_text, "chr");
+
+if chr_text == "x"
+    chr_val = 23;
+elseif chr_text == "y"
+    chr_val = 24;
+else
+    chr_val = str2double(chr_text);
+end
+end
+
+function hits_table = createEmptyHitsTable()
+var_names = {'cluster_num','sid','gene_i','all_genes_i','gene_j','all_genes_j', ...
+             'bin_i','chr_i','pos_i','strand_i','bin_j','chr_j','pos_j','strand_j', ...
+             'sv_class','tile_qval','pval','prob','num_hits','stddev_i','stddev_j','tier'};
+var_types = {'double','cell','cell','cell','cell','cell', ...
+             'double','double','double','double','double','double','double','double', ...
+             'cell','double','double','double','double','double','double','cell'};
+
+hits_table = table('Size',[0 numel(var_names)], 'VariableTypes', var_types, 'VariableNames', var_names);
+end
+
+function sv_class = classifySVClass(chr_i, chr_j, strand_i, strand_j)
+n_rows = numel(chr_i);
+sv_class = repmat({''}, n_rows, 1);
+
+for i = 1:n_rows
+    if chr_i(i) ~= chr_j(i)
+        sv_class{i} = 'inter_chr';
+        continue;
+    end
+
+    si = normalizeStrandValue(strand_i(i));
+    sj = normalizeStrandValue(strand_j(i));
+
+    if si == "unknown" || sj == "unknown"
+        sv_class{i} = 'unknown';
+    elseif si == "+" && sj == "-"
+        sv_class{i} = 'del';
+    elseif si == "-" && sj == "+"
+        sv_class{i} = 'tandem_dup';
+    elseif (si == "+" && sj == "+") || (si == "-" && sj == "-")
+        sv_class{i} = 'inv';
+    else
+        sv_class{i} = 'unknown';
+    end
+end
+end
+
+function strand_text = normalizeStrandValue(raw_strand)
+if iscell(raw_strand)
+    raw_strand = raw_strand{1};
+end
+
+if isnumeric(raw_strand)
+    if isscalar(raw_strand)
+        if raw_strand == 1
+            strand_text = "+";
+            return;
+        elseif raw_strand == -1
+            strand_text = "-";
+            return;
+        end
+    end
+    strand_text = "unknown";
+    return;
+end
+
+if iscategorical(raw_strand)
+    raw_strand = string(raw_strand);
+end
+
+strand_text = string(raw_strand);
+strand_text = strtrim(strand_text);
+
+if strand_text == "+" || strand_text == "-"
+    return;
+end
+
+if strand_text == "1" || lower(strand_text) == "+1"
+    strand_text = "+";
+    return;
+end
+
+if strand_text == "-1"
+    strand_text = "-";
+    return;
+end
+
+strand_text = "unknown";
+end
 
 
 

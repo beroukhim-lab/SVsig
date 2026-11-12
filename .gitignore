@@ -3,8 +3,10 @@
 csv/
 working_files/
 
+.vscode
+.github
 
-
+20240719_testmodel.mat
 cbinom_alpha.mat
 debug_alpha.mat
 *.DS_Store

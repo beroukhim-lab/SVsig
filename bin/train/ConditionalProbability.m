@@ -1,4 +1,4 @@
-function [sij,sij1dy] = ConditionalProbability_copy(events,chsize,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx)
+function [sij,sij1dy] = ConditionalProbability(events,chsize,bins,EventLengthThreshold,CHR,num_annot,mfull,sij1dx)
 
 disp('calculating conditional probabilities...');
 global firstbin
