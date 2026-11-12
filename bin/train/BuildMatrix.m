@@ -21,11 +21,11 @@ end
 %initialize bins_event_tble
 %changed from 5 to 3 columns because 4th and 5th columns were not being
 %used
-bins_event_tble = zeros(length(events),3);
+bins_event_tble = zeros(size(events,1),3);
 
 %loop through all events (table of pairs of breakpoints)
 %for each row
-for c1 = 1:length(events)   
+for c1 = 1:size(events,1)   
     %find the indices of the bins in which the ith and jth breaks fall in        
     bins_event_tble(c1,1) = find(bins(:,1)==events(c1,1) & bins(:,2)<=events(c1,2) & bins(:,3)>=events(c1,2));
     bins_event_tble(c1,2) = find(bins(:,1)==events(c1,4) & bins(:,2)<=events(c1,5) & bins(:,3)>=events(c1,5));
